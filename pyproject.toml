@@ -1,0 +1,21 @@
+[project]
+name = "bms_gateway"
+version = "0.0.1"
+dependencies = [
+    "python-can",
+    "pipyadc",
+    "paho-mqtt",
+]
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project.scripts]
+bms_gateway = "bms_gateway:run_app"
+
+[tool.ruff.lint]
+select = ["ALL"]
+
+[tool.ruff]
+line-length = 80
