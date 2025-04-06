@@ -26,7 +26,9 @@ class MQTTBroadcaster():
         self._data_valid = asyncio.Condition()
 
     async def __aenter__(self):
-        self._task_publish_mqtt = self._event_loop.create_task(self._fn_task_publish_mqtt())
+        self._task_publish_mqtt = self._event_loop.create_task(
+            self._fn_task_publish_mqtt()
+        )
 
     async def __aexit__(self, _exc_type, _exc_value, _traceback):
         self._task_publish_mqtt.cancel()

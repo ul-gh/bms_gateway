@@ -36,12 +36,16 @@ parser.add_argument("-s", "--silent", action="store_true",
 parser.add_argument("-ss", "--super-silent", action="store_true",
                     help="Suppress text output. Also suppress warnings")
 
-cmdline = parser.parse_args(args) if args else parser.parse_args()
+cmdline = parser.parse_args()
 
-async def main_task(ifname):
+async def main_task():
     async with AsyncExitStack() as stack:
-        bms_in_1 = await stack.enter_async_context(BMS_In(CAN_IF_IN_1, "bms_in"))
-        bms_out = await stack.enter_async_context(BMS_Out(CAN_IF_OUT, "bms_out"))
+        bms_in_1 = await stack.enter_async_context(BMS_In(
+            CAN_IF_IN_1, "bms_in"
+        ))
+        bms_out = await stack.enter_async_context(BMS_Out(
+            CAN_IF_OUT, "bms_out"
+        ))
         mqtt_out = await stack.enter_async_context(MQTTBroadcaster(
             cmdline.broker, MQTT_PORT, cmdline.topic, MQTT_TX_INTERVAL
         ))
@@ -53,10 +57,13 @@ async def main_task(ifname):
             await mqtt_out.set_state(state_out)
 
 
-def run_app(*args):
+def run_app(*args: list[str]):
+    global cmdline
+    if args:
+        cmdline = parser.parse_args(args)
     logger.info(f"Running with options: {str(cmdline)[10:-1]}")
     try:
-        asyncio.run(main_task(cmdline.ifname))
+        asyncio.run(main_task())
     except KeyboardInterrupt:
         pass
 
