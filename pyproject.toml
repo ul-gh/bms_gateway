@@ -5,6 +5,7 @@ dependencies = [
     "python-can",
     "pipyadc",
     "paho-mqtt",
+    "aiomqtt",
 ]
 
 [build-system]
@@ -12,7 +13,7 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project.scripts]
-bms_gateway = "bms_gateway:run_app"
+bms_gateway = "bms_gateway.app:run_app"
 
 [tool.ruff.lint]
 select = ["ALL"]

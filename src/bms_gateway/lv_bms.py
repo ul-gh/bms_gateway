@@ -3,9 +3,10 @@ import asyncio
 import threading
 import logging
 import can
+from typing import Awaitable
 from dataclasses import dataclass, asdict
 
-from bms_state import BmsState
+from .bms_state import BmsState
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +37,7 @@ class BMS_In():
         self._data_ready = asyncio.Condition()
         self._can_notifier: can.Notifier = None
         self._poll_task: can.CyclicSendTaskABC = None
-        self._main_task: asyncio.Task = None
+        self._task_main: asyncio.Task = None
         self._event_loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
 
     async def __aenter__(self):
@@ -48,23 +49,23 @@ class BMS_In():
         if self.poll_interval is not None:
             sync_msg = can.Message(arbitration_id=ID_INVERTER_REQUEST, data=[0] * 8)
             self._poll_task = self.bus.send_periodic(sync_msg, self.poll_interval)
-        self._main_task = self._event_loop.create_task(self._fn_main_task())
+        self._task_main = self._event_loop.create_task(self._fn_task_main())
         return self
 
     async def __aexit__(self, _exc_type, _exc_value, _traceback):
-        print("DEBUG: __exit__ called")
+        logger.debug("__aexit__ called")
         if self._poll_task is not None:
             self._poll_task.stop()
-        self._main_task.cancel()
+        self._task_main.cancel()
         self._can_notifier.stop()
         self.bus.shutdown()
 
-    async def get_state(self):
+    async def get_state(self) -> Awaitable[BmsState]:
         async with self._data_ready:
             await self._data_ready.wait()
             return self._state
 
-    async def _fn_main_task(self):
+    async def _fn_task_main(self):
         while True:
             msg = await self._reader.get_message()
             # Fill in BMS reply frames into dictionary
@@ -85,7 +86,7 @@ class BMS_In():
             else:
                 self._framecounter += 1
 
-    def _decode_frames_update_state(self, frames):
+    def _decode_frames_update_state(self, frames: dict[int, can.Message]):
         state = self._state
         try:
             # CAN ID 0x351
@@ -144,34 +145,56 @@ class BMS_Out():
         self.bus: can.Bus = None
         self._reader: can.AsyncBufferedReader = None
         self._output_msgs: list[can.Message] = self.bms_encode(BmsState())
-        self._can_notifier: can.Notifier = None
+        # Option A: Send BMS state data cyclically when push_interval is given
         self._push_task: can.ModifiableCyclicTaskABC = None
-        self._data_lock = threading.Lock()
+        # Option B: Send BMS state data when a SYNC message is received
+        self._task_reply: asyncio.Task = None
         self._event_loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
+        self._data_valid = asyncio.Condition()
+        self._can_notifier: can.Notifier = None
 
-    def __enter__(self):
+    async def __aenter__(self):
         self.bus = can.Bus(self.can_channel, "socketcan", bitrate=BMS_IN_BITRATE)
         self._reader = can.AsyncBufferedReader()
         self._can_notifier = can.Notifier(self.bus, [self._reader])
         if self.push_interval is not None:
             self._push_task = self.bus.send_periodic(self._output_msgs, self.push_interval)
             assert isinstance(self._push_task, can.ModifiableCyclicTaskABC)
+        else:
+            self._task_reply = self._event_loop.create_task(self._fn_task_reply())
         return self
 
-    def __exit__(self, _exc_type, _exc_value, _traceback):
+    async def __eexit__(self, _exc_type, _exc_value, _traceback):
         if self._push_task is not None:
             self._push_task.stop()
+        else:
+            self._task_reply.cancel()
         self._can_notifier.stop()
         self.bus.shutdown()
 
-    def set_state(self, state):
-        with self._data_lock:
+    async def set_state(self, state: BmsState):
+        async with self._data_valid:
             self._output_msgs.clear()
-            self._output_msgs.extend(self.bms_encode(state))
+            self._output_msgs.extend(self._bms_encode(state))
             if self.push_interval is not None:
                 self._push_task.modify_data(self._output_msgs)
+            self._data_valid.notify_all()
 
-    def bms_encode(self, state) -> list[can.Message]:
+    async def _fn_task_reply(self):
+        while True:
+            # Acquire lock and wait until data_valid is notified by set_state()
+            async with self._data_valid:
+                await self._data_valid.wait()
+                # Read incoming CAN msgs until a SYNC message is received
+                while True:
+                    msg = await self._reader.get_message()
+                    if msg.arbitration_id == ID_INVERTER_REQUEST:
+                        break
+                # SYNC message was received, reply by sending state to inverter
+                for msg in self._output_msgs:
+                    self.bus.send(msg)
+
+    def _bms_encode(self, state: BmsState) -> list[can.Message]:
         msg_351 = (
             int(10 * state.v_charge_cmd).to_bytes(2, "little")
             + int(10 * state.i_lim_charge).to_bytes(2, "little", signed=True)
@@ -212,9 +235,3 @@ class BMS_Out():
             can.Message(arbitration_id=0x35C, data=msg_35C),
             can.Message(arbitration_id=0x35E, data=msg_35E),
         ]
-
-    # Handler for incoming SYNC message
-    def _on_sync_msg(self):
-        with self._data_lock:
-            self.bus.send(self._output_msgs)
-
