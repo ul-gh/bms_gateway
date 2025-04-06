@@ -164,7 +164,7 @@ class BMS_Out():
             self._task_reply = self._event_loop.create_task(self._fn_task_reply())
         return self
 
-    async def __eexit__(self, _exc_type, _exc_value, _traceback):
+    async def __aexit__(self, _exc_type, _exc_value, _traceback):
         if self._push_task is not None:
             self._push_task.stop()
         else:
