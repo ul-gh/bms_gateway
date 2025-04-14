@@ -22,11 +22,11 @@ class MQTTBroadcaster():
         self.tx_interval = tx_interval
         self._state = BmsState()
         self._task_publish_mqtt: asyncio.Task = None
-        self._event_loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
         self._data_valid = asyncio.Condition()
 
     async def __aenter__(self):
-        self._task_publish_mqtt = self._event_loop.create_task(
+        loop = asyncio.get_event_loop()
+        self._task_publish_mqtt = loop.create_task(
             self._fn_task_publish_mqtt()
         )
 

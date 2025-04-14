@@ -1,6 +1,5 @@
 import time
 import asyncio
-import threading
 import logging
 import can
 from typing import Awaitable
@@ -38,18 +37,16 @@ class BMS_In():
         self._can_notifier: can.Notifier = None
         self._poll_task: can.CyclicSendTaskABC = None
         self._task_main: asyncio.Task = None
-        self._event_loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
 
     async def __aenter__(self):
+        loop = asyncio.get_event_loop()
         self.bus = can.Bus(self.can_channel, "socketcan", bitrate=BMS_IN_BITRATE)
         self._reader = can.AsyncBufferedReader()
-        self._can_notifier = can.Notifier(
-            self.bus, [self._reader], loop=self._event_loop
-        )
+        self._can_notifier = can.Notifier(self.bus, [self._reader], loop=loop)
         if self.poll_interval is not None:
             sync_msg = can.Message(arbitration_id=ID_INVERTER_REQUEST, data=[0] * 8)
             self._poll_task = self.bus.send_periodic(sync_msg, self.poll_interval)
-        self._task_main = self._event_loop.create_task(self._fn_task_main())
+        self._task_main = loop.create_task(self._fn_task_main())
         return self
 
     async def __aexit__(self, _exc_type, _exc_value, _traceback):
@@ -144,24 +141,26 @@ class BMS_Out():
         self.push_interval = push_interval
         self.bus: can.Bus = None
         self._reader: can.AsyncBufferedReader = None
-        self._output_msgs: list[can.Message] = self.bms_encode(BmsState())
+        self._output_msgs: list[can.Message] = self._bms_encode(BmsState())
         # Option A: Send BMS state data cyclically when push_interval is given
         self._push_task: can.ModifiableCyclicTaskABC = None
         # Option B: Send BMS state data when a SYNC message is received
         self._task_reply: asyncio.Task = None
-        self._event_loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
         self._data_valid = asyncio.Condition()
         self._can_notifier: can.Notifier = None
 
     async def __aenter__(self):
+        loop = asyncio.get_event_loop()
         self.bus = can.Bus(self.can_channel, "socketcan", bitrate=BMS_IN_BITRATE)
         self._reader = can.AsyncBufferedReader()
-        self._can_notifier = can.Notifier(self.bus, [self._reader])
+        self._can_notifier = can.Notifier(self.bus, [self._reader], loop=loop)
         if self.push_interval is not None:
-            self._push_task = self.bus.send_periodic(self._output_msgs, self.push_interval)
+            self._push_task = self.bus.send_periodic(
+                self._output_msgs, self.push_interval
+            )
             assert isinstance(self._push_task, can.ModifiableCyclicTaskABC)
         else:
-            self._task_reply = self._event_loop.create_task(self._fn_task_reply())
+            self._task_reply = loop.create_task(self._fn_task_reply())
         return self
 
     async def __aexit__(self, _exc_type, _exc_value, _traceback):

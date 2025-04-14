@@ -3,11 +3,12 @@
 import argparse
 import asyncio
 import logging
+import threading
 from contextlib import AsyncExitStack
 
 from .bms_state import BmsState
 from .lv_bms import BMS_In, BMS_Out
-from .mqtt_broadcast import MQTTBroadcaster
+from .mqtt_broadcaster import MQTTBroadcaster
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,9 @@ parser.add_argument("-ss", "--super-silent", action="store_true",
 
 cmdline = parser.parse_args()
 
+t_main: threading.Thread = None
+thread_stop = threading.Event()
+
 async def main_task():
     async with AsyncExitStack() as stack:
         bms_in_1 = await stack.enter_async_context(BMS_In(
@@ -49,7 +53,7 @@ async def main_task():
         mqtt_out = await stack.enter_async_context(MQTTBroadcaster(
             cmdline.broker, MQTT_PORT, cmdline.topic, MQTT_TX_INTERVAL
         ))
-        while True:
+        while not thread_stop.isSet():
             state_in_1 = await bms_in_1.get_state()
             print(state_in_1)
             state_out = state_in_1
@@ -57,7 +61,7 @@ async def main_task():
             await mqtt_out.set_state(state_out)
 
 
-def run_app(*args: list[str]):
+def run_app(*args: str):
     global cmdline
     if args:
         cmdline = parser.parse_args(args)
@@ -66,6 +70,16 @@ def run_app(*args: list[str]):
         asyncio.run(main_task())
     except KeyboardInterrupt:
         pass
+
+def run_app_bg():
+    """Run app in background thread (for debugging in ipython etc)"""
+    global t_main
+    thread_stop.clear()
+    t_main = threading.Thread(target=run_app)
+    t_main.start()
+
+def stop_app():
+    thread_stop.set()
 
 
 if __name__ == "__main__":
