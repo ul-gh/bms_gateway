@@ -16,6 +16,19 @@ keeping track of system state and for system control.
 This also allows for easy control of instantaneous influx and outgoing power
 at any given time by setting and limiting battery current setpoint.
 
+The Python code uses asyncio, async-enabled python-can and aiomqtt packages
+for cooperative multitasking.
+
+Battery-management CAN bus interface is supposed to be facilitated using
+the Linux kernel socket-can API. Hardware interfaces are e.g. using the
+Raspberry Pi and a multiple-CAN-bus-interface:
+
+![RPi Multiple Isolated CAN-Bus HAT image](doc/multiple_can_hat.jpg "RPi Multiple Isolated CAN-Bus HAT")
+
+Or, alternatively, using multiple USB-to-CAN adapters based con CANable setup:
+
+![UCAN Board Based on STM32F072 USB to CAN Adapter image](doc/ucan_canable_compatible_usb_can_adapter.jpg "UCAN Board Based on STM32F072 USB to CAN Adapter")
+
 2025-04-25 Ulrich Lukas
 ## Incomplete and for testing purposes only!
 
@@ -27,8 +40,10 @@ cd bms_gateway
 pip install .
 ```
 
+## Usage
 ```
-
+see help output of executable:
+user@machine:~$ bms_gateway --help
 ```
 
 Example output:
