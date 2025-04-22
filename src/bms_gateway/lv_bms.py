@@ -2,8 +2,7 @@ import time
 import asyncio
 import logging
 import can
-from typing import Awaitable
-from dataclasses import dataclass, asdict
+from typing import Self
 
 from .bms_state import BmsState
 
@@ -38,7 +37,7 @@ class BMS_In():
         self._poll_task: can.CyclicSendTaskABC = None
         self._task_main: asyncio.Task = None
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> Self:
         loop = asyncio.get_event_loop()
         self.bus = can.Bus(self.can_channel, "socketcan", bitrate=BMS_IN_BITRATE)
         self._reader = can.AsyncBufferedReader()
@@ -49,7 +48,7 @@ class BMS_In():
         self._task_main = loop.create_task(self._fn_task_main())
         return self
 
-    async def __aexit__(self, _exc_type, _exc_value, _traceback):
+    async def __aexit__(self, _exc_type, _exc_value, _traceback) -> None:
         logger.debug("__aexit__ called")
         if self._poll_task is not None:
             self._poll_task.stop()
@@ -57,12 +56,13 @@ class BMS_In():
         self._can_notifier.stop()
         self.bus.shutdown()
 
-    async def get_state(self) -> Awaitable[BmsState]:
+    async def get_state(self) -> BmsState:
+        logger.debug("BMS_In:get_state() called")
         async with self._data_ready:
             await self._data_ready.wait()
             return self._state
 
-    async def _fn_task_main(self):
+    async def _fn_task_main(self) -> None:
         while True:
             msg = await self._reader.get_message()
             # Fill in BMS reply frames into dictionary
@@ -83,7 +83,7 @@ class BMS_In():
             else:
                 self._framecounter += 1
 
-    def _decode_frames_update_state(self, frames: dict[int, can.Message]):
+    def _decode_frames_update_state(self, frames: dict[int, can.Message]) -> None:
         state = self._state
         try:
             # CAN ID 0x351
@@ -134,62 +134,63 @@ class BMS_Out():
     def __init__(self,
                  can_channel: str = "can1",
                  description: str = "",
-                 push_interval: float = None,
+                 sync_interval: float = None,
                  ):
         self.can_channel = can_channel
         self.description = description
-        self.push_interval = push_interval
+        self.sync_interval = sync_interval
         self.bus: can.Bus = None
         self._reader: can.AsyncBufferedReader = None
         self._output_msgs: list[can.Message] = self._bms_encode(BmsState())
-        # Option A: Send BMS state data cyclically when push_interval is given
-        self._push_task: can.ModifiableCyclicTaskABC = None
+        # Option A: Send BMS state data cyclically when sync_interval is given
+        self._sync_task: can.CyclicSendTaskABC = None
         # Option B: Send BMS state data when a SYNC message is received
         self._task_reply: asyncio.Task = None
         self._data_valid = asyncio.Condition()
         self._can_notifier: can.Notifier = None
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> Self:
         loop = asyncio.get_event_loop()
         self.bus = can.Bus(self.can_channel, "socketcan", bitrate=BMS_IN_BITRATE)
         self._reader = can.AsyncBufferedReader()
         self._can_notifier = can.Notifier(self.bus, [self._reader], loop=loop)
-        if self.push_interval is not None:
-            self._push_task = self.bus.send_periodic(
-                self._output_msgs, self.push_interval
+        if self.sync_interval is not None:
+            sync_msg = can.Message(
+                arbitration_id=ID_INVERTER_REQUEST,
+                is_extended_id=False,
+                data=b"\x00" * 8
             )
-            assert isinstance(self._push_task, can.ModifiableCyclicTaskABC)
-        else:
-            self._task_reply = loop.create_task(self._fn_task_reply())
+            self._sync_task = self.bus.send_periodic(sync_msg, self.sync_interval)
+            assert isinstance(self._sync_task, can.CyclicSendTaskABC)
+        self._task_reply = loop.create_task(self._fn_task_reply())
         return self
 
-    async def __aexit__(self, _exc_type, _exc_value, _traceback):
-        if self._push_task is not None:
-            self._push_task.stop()
+    async def __aexit__(self, _exc_type, _exc_value, _traceback) -> None:
+        if self._sync_task is not None:
+            self._sync_task.stop()
         else:
             self._task_reply.cancel()
         self._can_notifier.stop()
         self.bus.shutdown()
 
-    async def set_state(self, state: BmsState):
+    async def set_state(self, state: BmsState) -> None:
+        logger.debug("BMS_Out:set_state() called")
         async with self._data_valid:
             self._output_msgs.clear()
             self._output_msgs.extend(self._bms_encode(state))
-            if self.push_interval is not None:
-                self._push_task.modify_data(self._output_msgs)
             self._data_valid.notify_all()
 
-    async def _fn_task_reply(self):
+    async def _fn_task_reply(self) -> None:
         while True:
-            # Acquire lock and wait until data_valid is notified by set_state()
+            # Read incoming CAN msgs until a SYNC message is received
+            while True:
+                msg = await self._reader.get_message()
+                if msg.arbitration_id == ID_INVERTER_REQUEST:
+                    break
+            # SYNC message was received, reply by sending state to inverter
+            # once _data_valid is notified by set_state()
             async with self._data_valid:
                 await self._data_valid.wait()
-                # Read incoming CAN msgs until a SYNC message is received
-                while True:
-                    msg = await self._reader.get_message()
-                    if msg.arbitration_id == ID_INVERTER_REQUEST:
-                        break
-                # SYNC message was received, reply by sending state to inverter
                 for msg in self._output_msgs:
                     self.bus.send(msg)
 
@@ -227,10 +228,10 @@ class BMS_Out():
         ).to_bytes()
         msg_35E = state.manufacturer.encode("ascii") + b"\x00"
         return [
-            can.Message(arbitration_id=0x351, data=msg_351),
-            can.Message(arbitration_id=0x355, data=msg_355),
-            can.Message(arbitration_id=0x356, data=msg_356),
-            can.Message(arbitration_id=0x359, data=msg_359),
-            can.Message(arbitration_id=0x35C, data=msg_35C),
-            can.Message(arbitration_id=0x35E, data=msg_35E),
+            can.Message(arbitration_id=0x351, is_extended_id=False, data=msg_351),
+            can.Message(arbitration_id=0x355, is_extended_id=False, data=msg_355),
+            can.Message(arbitration_id=0x356, is_extended_id=False, data=msg_356),
+            can.Message(arbitration_id=0x359, is_extended_id=False, data=msg_359),
+            can.Message(arbitration_id=0x35C, is_extended_id=False, data=msg_35C),
+            can.Message(arbitration_id=0x35E, is_extended_id=False, data=msg_35E),
         ]
