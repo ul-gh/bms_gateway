@@ -3,7 +3,7 @@
 for LV (48V) Battery Management Systems using Pylontech Protocol.
 ---
 
-Pylontech Protocol, while imitating the SMA Sunny Island CAN-Bus BMS protocol,
+Pylontech protocol, while imitating the SMA Sunny Island CAN-Bus BMS protocol,
 has found widespread adoption for Low-Voltage (LV) Li-Ion
 battery energy storage systems (BESS).
 
