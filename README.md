@@ -25,7 +25,7 @@ Raspberry Pi and a multiple-CAN-bus-interface:
 
 ![RPi Multiple Isolated CAN-Bus HAT image](doc/multiple_can_hat.jpg "RPi Multiple Isolated CAN-Bus HAT")
 
-Or, alternatively, using multiple USB-to-CAN adapters based con CANable setup:
+Or, alternatively, using multiple USB-to-CAN adapters based on CANable-compatible firmware:
 
 ![UCAN Board Based on STM32F072 USB to CAN Adapter image](doc/ucan_canable_compatible_usb_can_adapter.jpg "UCAN Board Based on STM32F072 USB to CAN Adapter")
 
