@@ -19,4 +19,4 @@ bms_gateway = "bms_gateway.app:run_app"
 select = ["ALL"]
 
 [tool.ruff]
-line-length = 80
+line-length = 120
