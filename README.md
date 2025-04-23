@@ -21,7 +21,13 @@ for cooperative multitasking.
 
 Battery-management CAN bus interface is supposed to be facilitated using
 the Linux kernel socket-can API. Hardware interfaces are e.g. using the
-Raspberry Pi and a multiple-CAN-bus-interface:
+Raspberry Pi and a multiple-CAN-bus-interface, or, alternatively, using
+multiple USB-to-CAN adapters based on CANable-compatible firmware.
+
+The gateway application is configured via text file in user home folder:
+    ~/.bms_gateway/bms_config.toml
+
+This file must be edited to suit application details.
 
 ![RPi Multiple Isolated CAN-Bus HAT image](doc/multiple_can_hat.jpg "RPi Multiple Isolated CAN-Bus HAT")
 

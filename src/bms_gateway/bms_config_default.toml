@@ -6,6 +6,7 @@ ACTIVATED = true
 TOPIC = "tele/bms/state"
 BROKER = "localhost"
 PORT = 1883
+# MQTT broadcast (transmit) interval in seconds
 INTERVAL = 10.0
 
 

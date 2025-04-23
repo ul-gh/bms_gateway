@@ -1,4 +1,10 @@
-"""BMS gateway configuration"""
+"""BMS gateway configuration
+
+Do not edit the configuration values herein, they will be
+overwritten from config file, see file names below!
+
+2025-04-25 Ulrich Lukas
+"""
 import sys
 import logging
 import shutil
@@ -54,6 +60,7 @@ class MQTTConfig():
     TOPIC: str = "tele/bms/state"
     BROKER: str = "localhost"
     PORT: int = 1883
+    # MQTT broadcast (transmit) interval in seconds
     INTERVAL: float = 10.0
 
 @dataclass
@@ -70,6 +77,10 @@ def init_or_read_from_config_file() -> AppConfig:
     if not conf_file.is_file():
         conf_file.parent.mkdir(exist_ok=True)
         shutil.copy(default_conf_file, conf_file)
+        logger.info(f"Configuration initialized using file: {conf_file}\n"
+                    "==> Please edit this file NOW to configure CAN hardware "
+                     "etc. and run the application again!")
+        sys.exit(1)
     try:
         conf = Binder(AppConfig).parse_toml(conf_file)
     except Exception as e:
