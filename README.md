@@ -49,11 +49,16 @@ pip install .
 ```
 
 ## Usage
-```
 Run application once to initialize the configuration file, then
 edit configuration and run or install application as a system service.
 
-user@machine:~$ bms_gateway --help
+```
+user@machine:~$ bms_gateway --init
+```
+Edit ~/.bms_gateway/bms_config.toml and run app:
+
+```
+user@machine:~$ bms_gateway
 ```
 
 Example output:
