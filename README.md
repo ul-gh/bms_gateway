@@ -34,7 +34,7 @@ Or, alternatively, using multiple USB-to-CAN adapters based on CANable-compatibl
 
 ## Installation
 ```
-cd /home/src
+cd ~/src
 git clone https://github.com/ul-gh/bms_gateway
 cd bms_gateway
 pip install .

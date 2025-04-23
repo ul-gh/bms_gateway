@@ -3,9 +3,9 @@ name = "bms_gateway"
 version = "0.0.1"
 dependencies = [
     "python-can",
-    "pipyadc",
     "paho-mqtt",
     "aiomqtt",
+    "dataclass-binder",
 ]
 
 [build-system]
@@ -14,6 +14,9 @@ build-backend = "setuptools.build_meta"
 
 [project.scripts]
 bms_gateway = "bms_gateway.app:run_app"
+
+[tool.setuptools.package-data]
+bms_gateway = ["*.toml"]
 
 [tool.ruff.lint]
 select = ["ALL"]

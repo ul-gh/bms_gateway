@@ -2,13 +2,13 @@
 
 For BMS using Pylontech Protocol
 """
-from dataclasses import dataclass
+from typing import Self
+from dataclasses import dataclass, replace
 
 
 @dataclass
-class BmsState:
+class BMSState:
     """BMS state as received on the CAN bus."""
-
     manufacturer: str = ""
     soc: int = 0
     soh: int = 0
@@ -31,6 +31,10 @@ class BmsState:
     timestamp_last_bms_update: float = 0.0
     timestamp_last_inverter_request: float = 0.0
     n_invalid_data_telegrams: int = 0
+    capacity_ah: float = 1.0
+
+    def copy(self) -> Self:
+        return replace(self)
 
 
 @dataclass
@@ -63,6 +67,9 @@ class Errors:
         flags_high = int(self.system_error) * 1<<3
         flags_high |= int(self.oc_charge) * 1<<0
         return flags_low, flags_high
+    
+    def copy(self) -> Self:
+        return replace(self)
 
 
 @dataclass
@@ -95,3 +102,6 @@ class Warnings:
         flags_high = int(self.comm_fail) * 1<<3
         flags_high |= int(self.oc_charge) * 1<<0
         return flags_low, flags_high
+    
+    def copy(self) -> Self:
+        return replace(self)

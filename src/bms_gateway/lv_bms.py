@@ -4,7 +4,8 @@ import logging
 import can
 from typing import Self
 
-from .bms_state import BmsState
+from .app_config import BMS_In_Config, BMS_Out_Config
+from .bms_state import BMSState
 
 logger = logging.getLogger(__name__)
 
@@ -19,17 +20,13 @@ ID_INVERTER_REQUEST: int = 0x305
 
 
 class BMS_In():
-    def __init__(self,
-                 can_channel: str = "can1",
-                 description: str = "",
-                 poll_interval: float = None,
-                 ):
-        self.can_channel = can_channel
-        self.description = description
-        self.poll_interval = poll_interval
+    def __init__(self, config: BMS_In_Config):
+        self.can_channel = config.CAN_IF
+        self.description = config.DESCRIPTION
+        self.poll_interval = config.POLL_INTERVAL
         self.bus: can.Bus = None
         self._reader: can.AsyncBufferedReader = None
-        self._state = BmsState()
+        self._state = BMSState(capacity_ah=config.CAPACITY_AH)
         self._raw_frames: dict = {}
         self._framecounter: int = 0
         self._data_ready = asyncio.Condition()
@@ -56,7 +53,7 @@ class BMS_In():
         self._can_notifier.stop()
         self.bus.shutdown()
 
-    async def get_state(self) -> BmsState:
+    async def get_state(self) -> BMSState:
         logger.debug("BMS_In:get_state() called")
         async with self._data_ready:
             await self._data_ready.wait()
@@ -131,17 +128,13 @@ class BMS_In():
 
 
 class BMS_Out():
-    def __init__(self,
-                 can_channel: str = "can1",
-                 description: str = "",
-                 sync_interval: float = None,
-                 ):
-        self.can_channel = can_channel
-        self.description = description
-        self.sync_interval = sync_interval
+    def __init__(self, config: BMS_Out_Config):
+        self.can_channel = config.CAN_IF
+        self.description = config.DESCRIPTION
+        self.sync_interval = config.SYNC_INTERVAL
         self.bus: can.Bus = None
         self._reader: can.AsyncBufferedReader = None
-        self._output_msgs: list[can.Message] = self._bms_encode(BmsState())
+        self._output_msgs: list[can.Message] = self._bms_encode(BMSState())
         # Option A: Send BMS state data cyclically when sync_interval is given
         self._sync_task: can.CyclicSendTaskABC = None
         # Option B: Send BMS state data when a SYNC message is received
@@ -173,7 +166,7 @@ class BMS_Out():
         self._can_notifier.stop()
         self.bus.shutdown()
 
-    async def set_state(self, state: BmsState) -> None:
+    async def set_state(self, state: BMSState) -> None:
         logger.debug("BMS_Out:set_state() called")
         async with self._data_valid:
             self._output_msgs.clear()
@@ -194,7 +187,7 @@ class BMS_Out():
                 for msg in self._output_msgs:
                     self.bus.send(msg)
 
-    def _bms_encode(self, state: BmsState) -> list[can.Message]:
+    def _bms_encode(self, state: BMSState) -> list[can.Message]:
         msg_351 = (
             int(10 * state.v_charge_cmd).to_bytes(2, "little")
             + int(10 * state.i_lim_charge).to_bytes(2, "little", signed=True)

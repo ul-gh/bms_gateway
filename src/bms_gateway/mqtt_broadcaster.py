@@ -5,23 +5,19 @@ import json
 import dataclasses
 from typing import Self
 
-from .bms_state import BmsState
+from .app_config import MQTTConfig
+from .bms_state import BMSState
 
 logger = logging.getLogger(__name__)
 
 
 class MQTTBroadcaster():
-    def __init__(self,
-                 broker: str = "localhost",
-                 port: int = 1883,
-                 topic: str = "tele/bms/state",
-                 tx_interval: float = 10.0,
-                 ):
-        self.broker = broker
-        self.port = port
-        self.topic = topic
-        self.tx_interval = tx_interval
-        self._state = BmsState()
+    def __init__(self, config: MQTTConfig):
+        self.broker = config.BROKER
+        self.port = config.PORT
+        self.topic = config.TOPIC
+        self.tx_interval = config.INTERVAL
+        self._state = BMSState()
         self._task_publish_mqtt: asyncio.Task = None
         self._data_valid = asyncio.Condition()
 
@@ -34,7 +30,7 @@ class MQTTBroadcaster():
     async def __aexit__(self, _exc_type, _exc_value, _traceback) -> None:
         self._task_publish_mqtt.cancel()
 
-    async def set_state(self, state: BmsState) -> None:
+    async def set_state(self, state: BMSState) -> None:
         async with self._data_valid:
             self._state = state
             self._data_valid.notify_all()

@@ -23,6 +23,11 @@ the Linux kernel socket-can API. Hardware interfaces are e.g. using the
 Raspberry Pi and a multiple-CAN-bus-interface, or, alternatively, using
 multiple USB-to-CAN adapters based on CANable-compatible firmware.
 
+The gateway application is configured via text file in user home folder:
+    ~/.bms_gateway/bms_config.toml
+
+This file must be edited to suit application details.
+
 2025-04-25 Ulrich Lukas
 """
 import argparse
@@ -31,73 +36,51 @@ import logging
 import threading
 from contextlib import AsyncExitStack
 
+from . import app_config
 from .lv_bms import BMS_In, BMS_Out
 from .mqtt_broadcaster import MQTTBroadcaster
+from .bms_multiplexer import BMSMultiplexer
 
 logger = logging.getLogger(__name__)
 
-CAN_IF_OUT_DEFAULT: str = "vcan0"
-CAN_IFS_IN_DEFAULT: list[str] = ["vcan1", "vcan2"]
-
-MQTT_TOPIC_DEFAULT: str = "tele/bms/state"
-MQTT_BROKER_DEFAULT: str = "localhost"
-MQTT_PORT_DEFAULT: int = 1883
-MQTT_INTERVAL_DEFAULT: float = 10.0
-
 parser = argparse.ArgumentParser(prog=__package__, description=__doc__)
-parser.add_argument("--sync_interval", type=float, default=None,
-                    help="Send SYNC message to inverter cyclically with this period in seconds. Default: Do not send SYNC.")
-parser.add_argument("--no_push_mqtt", action="store_true",
-                    help="Do not push incoming BMS telegrams to MQTT")
-parser.add_argument("--mqtt_interval", type=float, default=MQTT_INTERVAL_DEFAULT,
-                    help=f"MQTT transmit interval. Default: MQTT_INTERVAL_DEFAULT")
-parser.add_argument("-t", "--topic", type=str, default=MQTT_TOPIC_DEFAULT,
-                    help=f"MQTT topic to push to. Default: MQTT_TOPIC_DEFAULT")
-parser.add_argument("-b", "--broker", type=str, default=MQTT_BROKER_DEFAULT,
-                    help=f"MQTT host (broker) to push to. Default: MQTT_BROKER_DEFAULT")
-parser.add_argument("--port", type=str, default=MQTT_PORT_DEFAULT,
-                    help=f"MQTT broker port. Default: MQTT_PORT_DEFAULT")
 parser.add_argument("-v", "--verbose", action="store_true",
                     help="Enable verbose (debug) output")
-parser.add_argument("if_out", type=str, nargs="?", default=CAN_IF_OUT_DEFAULT,
-                    help=f"CAN interface to use for output to inverter. Default: CAN_IF_OUT_DEFAULT")
-parser.add_argument("ifs_in", type=str, nargs="*", default=CAN_IFS_IN_DEFAULT,
-                    help=f"List of CAN interfaces to read from BMSes. Default: CAN_IFS_IN_DEFAULT")
-
 cmdline = parser.parse_args()
-
 if cmdline.verbose:
     logging.basicConfig(level=logging.DEBUG)
+
+# App configuration read from file: "~/bms_gateway/bms_config.toml"
+# Default configuration: See source tree file "bms_config_default.toml"
+conf = app_config.init_or_read_from_config_file()
 
 t_main: threading.Thread = None
 thread_stop = threading.Event()
 
+multiplexer = BMSMultiplexer(conf.bms_out)
+
+
 async def main_task() -> None:
     async with AsyncExitStack() as stack:
-        bmses_in = [BMS_In(can_if, "bms_in") for can_if in cmdline.ifs_in]
+        bmses_in = [BMS_In(bms_conf) for bms_conf in conf.bmses_in]
         for bms in bmses_in:
             await stack.enter_async_context(bms)
-        bms_out = BMS_Out(cmdline.if_out, "bms_out", sync_interval=cmdline.sync_interval)
+        bms_out = BMS_Out(conf.bms_out)
         await stack.enter_async_context(bms_out)
-        if not cmdline.no_push_mqtt:
-            mqtt_out = MQTTBroadcaster(
-                cmdline.broker, cmdline.port, cmdline.topic, cmdline.mqtt_interval,
-            )  
+        if conf.mqtt.ACTIVATED:
+            mqtt_out = MQTTBroadcaster(conf.mqtt)  
             await stack.enter_async_context(mqtt_out)
         while not thread_stop.isSet():
-            state_in_1 = await bmses_in[0].get_state()
-            logger.debug(state_in_1)
-            state_out = state_in_1
+            getters = (bms.get_state() for bms in bmses_in)
+            states_in = await asyncio.gather(*getters)
+            state_out = multiplexer.calculate_result_state(states_in)
+            logger.debug(state_out)
             await bms_out.set_state(state_out)
-            if not cmdline.no_push_mqtt:
+            if conf.mqtt.ACTIVATED:
                 await mqtt_out.set_state(state_out)
 
 
-def run_app(*args: str) -> None:
-    global cmdline
-    if args:
-        cmdline = parser.parse_args(args)
-    logger.info(f"Running with options: {str(cmdline)[10:-1]}")
+def run_app() -> None:
     try:
         asyncio.run(main_task())
     except KeyboardInterrupt:
