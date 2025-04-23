@@ -29,6 +29,8 @@ The gateway application is configured via text file in user home folder:
 
 This file must be edited to suit application details.
 
+Hardware interfaces are e.g. using the Raspberry Pi and a multiple-CAN-bus-interface:
+
 ![RPi Multiple Isolated CAN-Bus HAT image](doc/multiple_can_hat.jpg "RPi Multiple Isolated CAN-Bus HAT")
 
 Or, alternatively, using multiple USB-to-CAN adapters based on CANable-compatible firmware:
