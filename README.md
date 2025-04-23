@@ -50,7 +50,9 @@ pip install .
 
 ## Usage
 ```
-see help output of executable:
+Run application once to initialize the configuration file, then
+edit configuration and run or install application as a system service.
+
 user@machine:~$ bms_gateway --help
 ```
 

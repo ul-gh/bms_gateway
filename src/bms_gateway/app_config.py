@@ -71,16 +71,19 @@ class AppConfig():
     bmses_in: list[BMS_In_Config]
 
 
-def init_or_read_from_config_file() -> AppConfig:
+def init_or_read_from_config_file(init=False) -> AppConfig:
     conf_file = Path.home().joinpath(f".{__package__}").joinpath(CONFIG_FILE_NAME)
     default_conf_file = files(__package__).joinpath(DEFAULT_CONFIG_FILE_NAME)
-    if not conf_file.is_file():
+    if init or not conf_file.is_file():
         conf_file.parent.mkdir(exist_ok=True)
         shutil.copy(default_conf_file, conf_file)
-        logger.info(f"Configuration initialized using file: {conf_file}\n"
-                    "==> Please edit this file NOW to configure CAN hardware "
-                     "etc. and run the application again!")
-        sys.exit(1)
+        logger.log(
+            level=logging.INFO if init else logging.ERROR,
+            msg=f"Configuration initialized using file: {conf_file}\n"
+            "==> Please edit this file NOW to configure CAN hardware "
+            "etc. and run the application again!",
+        )
+        sys.exit(0 if init else 1)
     try:
         conf = Binder(AppConfig).parse_toml(conf_file)
     except Exception as e:

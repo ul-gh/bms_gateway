@@ -44,6 +44,8 @@ from .bms_multiplexer import BMSMultiplexer
 logger = logging.getLogger(__name__)
 
 parser = argparse.ArgumentParser(prog=__package__, description=__doc__)
+parser.add_argument("--init", action="store_true",
+                    help="Initialize configuration file and exit")
 parser.add_argument("-v", "--verbose", action="store_true",
                     help="Enable verbose (debug) output")
 cmdline = parser.parse_args()
@@ -52,7 +54,7 @@ if cmdline.verbose:
 
 # App configuration read from file: "~/bms_gateway/bms_config.toml"
 # Default configuration: See source tree file "bms_config_default.toml"
-conf = app_config.init_or_read_from_config_file()
+conf = app_config.init_or_read_from_config_file(init=cmdline.init)
 
 t_main: threading.Thread = None
 thread_stop = threading.Event()
