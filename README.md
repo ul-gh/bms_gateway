@@ -1,5 +1,5 @@
 # BMS CAN Gateway
-Multiplexing n x CAN - to - CAN and simultaneous CAN - to - MQTT Gateway
+Multiplexing n x m CAN-to-CAN and simultaneous CAN-to-MQTT Gateway
 for LV (48V) Battery Management Systems using Pylontech Protocol.
 
 Pylontech protocol, while imitating the SMA Sunny Island CAN-Bus BMS protocol,
