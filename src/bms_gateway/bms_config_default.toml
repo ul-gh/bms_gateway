@@ -25,9 +25,9 @@ INTERVAL = 10.0
 
 [battery]
 # Maximum charging current limit in Amperes for total battery stack
-I-LIM-CHARGE = 300.0
+I-LIM-CHARGE = 700.0
 # Maximum discharging current limit in Amperes for total battery stack
-I-LIM-DISCHARGE = 300.0
+I-LIM-DISCHARGE = 700.0
 # Apply this static scaling factor to the reported total battery stack current.
 # This can be used for total influx or outgoing power control.
 I-TOT-SCALING = 1.0

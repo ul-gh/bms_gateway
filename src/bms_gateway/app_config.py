@@ -38,9 +38,9 @@ class MQTTConfig():
 class Battery_Config():
     """Settings for total values of all parallel connected batteries"""
     # Maximum charging current limit in Amperes for total battery stack
-    I_LIM_CHARGE: float = 300.0
+    I_LIM_CHARGE: float = 700.0
     # Maximum discharging current limit in Amperes for total battery stack
-    I_LIM_DISCHARGE: float = 300.0
+    I_LIM_DISCHARGE: float = 700.0
     # Apply this scaling factor to the reported total battery stack current.
     # This can be used for total influx or outgoing power control.
     I_TOT_SCALING: float = 1.0

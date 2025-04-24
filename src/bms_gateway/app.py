@@ -14,8 +14,10 @@ connected to one or more batteries.
 Battery data is also published via MQTT telemetry for
 keeping track of system state and for system control.
 
-This also allows for control of instantaneous influx and outgoing power
-at any given time by setting and limiting battery current setpoint.
+This also allows for remote control of instantaneous influx and outgoing power
+at any given time by setting current limit setpoint.
+
+FIXME: remote control/throttling TBD
 
 The Python code uses asyncio, async-enabled python-can and aiomqtt packages
 for cooperative multitasking.
