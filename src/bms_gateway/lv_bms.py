@@ -21,9 +21,7 @@ ID_INVERTER_REQUEST: int = 0x305
 
 class BMS_In():
     def __init__(self, config: BMS_In_Config):
-        self.can_channel = config.CAN_IF
-        self.description = config.DESCRIPTION
-        self.poll_interval = config.POLL_INTERVAL
+        self.config = config
         self.bus: can.Bus = None
         self._reader: can.AsyncBufferedReader = None
         self._state = BMSState(capacity_ah=config.CAPACITY_AH)
@@ -35,13 +33,14 @@ class BMS_In():
         self._task_main: asyncio.Task = None
 
     async def __aenter__(self) -> Self:
+        conf = self.config
         loop = asyncio.get_event_loop()
-        self.bus = can.Bus(self.can_channel, "socketcan", bitrate=BMS_IN_BITRATE)
+        self.bus = can.Bus(conf.CAN_IF, "socketcan", bitrate=BMS_IN_BITRATE)
         self._reader = can.AsyncBufferedReader()
         self._can_notifier = can.Notifier(self.bus, [self._reader], loop=loop)
-        if self.poll_interval is not None:
+        if conf.POLL_INTERVAL is not None:
             sync_msg = can.Message(arbitration_id=ID_INVERTER_REQUEST, data=[0] * 8)
-            self._poll_task = self.bus.send_periodic(sync_msg, self.poll_interval)
+            self._poll_task = self.bus.send_periodic(sync_msg, conf.POLL_INTERVAL)
         self._task_main = loop.create_task(self._fn_task_main())
         return self
 
@@ -129,9 +128,7 @@ class BMS_In():
 
 class BMS_Out():
     def __init__(self, config: BMS_Out_Config):
-        self.can_channel = config.CAN_IF
-        self.description = config.DESCRIPTION
-        self.sync_interval = config.SYNC_INTERVAL
+        self.config = config
         self.bus: can.Bus = None
         self._reader: can.AsyncBufferedReader = None
         self._output_msgs: list[can.Message] = self._bms_encode(BMSState())
@@ -143,17 +140,18 @@ class BMS_Out():
         self._can_notifier: can.Notifier = None
 
     async def __aenter__(self) -> Self:
+        conf = self.config
         loop = asyncio.get_event_loop()
-        self.bus = can.Bus(self.can_channel, "socketcan", bitrate=BMS_IN_BITRATE)
+        self.bus = can.Bus(conf.CAN_IF, "socketcan", bitrate=BMS_IN_BITRATE)
         self._reader = can.AsyncBufferedReader()
         self._can_notifier = can.Notifier(self.bus, [self._reader], loop=loop)
-        if self.sync_interval is not None:
+        if conf.SEND_SYNC_ACTIVATED:
             sync_msg = can.Message(
                 arbitration_id=ID_INVERTER_REQUEST,
                 is_extended_id=False,
                 data=b"\x00" * 8
             )
-            self._sync_task = self.bus.send_periodic(sync_msg, self.sync_interval)
+            self._sync_task = self.bus.send_periodic(sync_msg, conf.SYNC_INTERVAL)
             assert isinstance(self._sync_task, can.CyclicSendTaskABC)
         self._task_reply = loop.create_task(self._fn_task_reply())
         return self

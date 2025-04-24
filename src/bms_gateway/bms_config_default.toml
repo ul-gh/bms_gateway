@@ -1,5 +1,8 @@
 #### BMS gateway configuration ####
 
+# Set this to true to enable the gateway application!
+GATEWAY-ACTIVATED = false
+
 #### Settings for MQTT broadcaster
 [mqtt]
 ACTIVATED = true
@@ -26,7 +29,7 @@ I-TOT-SCALING = 1.0
 I-TOT-OFFSET = 0.0
 # Send CAN sync-telegram (CAN-ID 0x305, data 8x 0x00) periodically to inverter
 # if this is set to true
-SEND-SYNC = false
+SEND-SYNC-ACTIVATED = false
 # Cycle time in seconds for CAN sync-telegram
 SYNC-INTERVAL = 5.0
 

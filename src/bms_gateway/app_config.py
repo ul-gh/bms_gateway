@@ -24,7 +24,7 @@ class BMS_Out_Config():
     # Dedicated CAN interface for this BMS
     CAN_IF: str = "vcan0"
     # Text description for the emulated BMS
-    DESCRIPTION = "Virtual BMS"
+    DESCRIPTION: str = "Virtual BMS"
     # Maximum charging current limit in Amperes as communicated to inverter
     I_LIM_CHARGE: float = 300.0
     # Maximum discharging current limit in Amperes as communicated to inverter
@@ -35,7 +35,7 @@ class BMS_Out_Config():
     I_TOT_OFFSET: float = 0.0
     # Send CAN sync-telegram (CAN-ID 0x305, data 8x 0x00) periodically to inverter
     # if this is set to true
-    SEND_SYNC: bool = False
+    SEND_SYNC_ACTIVATED: bool = False
     # Cycle time in seconds for CAN sync-telegram
     SYNC_INTERVAL: float = 5.0
 
@@ -66,6 +66,7 @@ class MQTTConfig():
 @dataclass
 class AppConfig():
     """All application settings"""
+    GATEWAY_ACTIVATED: bool
     mqtt: MQTTConfig
     bms_out: BMS_Out_Config
     bmses_in: list[BMS_In_Config]
@@ -86,6 +87,10 @@ def init_or_read_from_config_file(init=False) -> AppConfig:
         sys.exit(0 if init else 1)
     try:
         conf = Binder(AppConfig).parse_toml(conf_file)
+        if not conf.GATEWAY_ACTIVATED:
+            logger.error(f"BMS Gateway not configured! "
+                         f"Edit config file first: {conf_file}")
+            sys.exit(1)
     except Exception as e:
         logger.exception(f"Error reading configuration file {conf_file}")
         sys.exit(1)

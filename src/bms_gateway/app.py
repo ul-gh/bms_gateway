@@ -42,6 +42,7 @@ from .mqtt_broadcaster import MQTTBroadcaster
 from .bms_multiplexer import BMSMultiplexer
 
 logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 parser = argparse.ArgumentParser(prog=__package__, description=__doc__)
 parser.add_argument("--init", action="store_true",

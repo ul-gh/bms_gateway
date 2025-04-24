@@ -13,10 +13,7 @@ logger = logging.getLogger(__name__)
 
 class MQTTBroadcaster():
     def __init__(self, config: MQTTConfig):
-        self.broker = config.BROKER
-        self.port = config.PORT
-        self.topic = config.TOPIC
-        self.tx_interval = config.INTERVAL
+        self.config = config
         self._state = BMSState()
         self._task_publish_mqtt: asyncio.Task = None
         self._data_valid = asyncio.Condition()
@@ -37,13 +34,14 @@ class MQTTBroadcaster():
 
     # Periodically sends BMS data broadcast on the specified bus
     async def _fn_task_publish_mqtt(self) -> None:
+        conf = self.config
         loop = asyncio.get_event_loop()
-        async with aiomqtt.Client(self.broker, self.port) as client:
+        async with aiomqtt.Client(conf.BROKER, conf.PORT) as client:
             next_call = loop.time()
             while True:
                 async with self._data_valid:
                     await self._data_valid.wait()
                     msg_json = json.dumps(dataclasses.asdict(self._state))
-                await client.publish(self.topic, msg_json)
-                next_call += self.tx_interval
+                await client.publish(conf.TOPIC, msg_json)
+                next_call += conf.INTERVAL
                 await asyncio.sleep(next_call - loop.time())
