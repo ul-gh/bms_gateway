@@ -1,8 +1,6 @@
 # BMS CAN Gateway
-
 Multiplexing n x CAN - to - CAN and simultaneous CAN - to - MQTT Gateway
 for LV (48V) Battery Management Systems using Pylontech Protocol.
----
 
 Pylontech protocol, while imitating the SMA Sunny Island CAN-Bus BMS protocol,
 has found widespread adoption for Low-Voltage (LV) Li-Ion
@@ -22,9 +20,9 @@ at any given time by setting and limiting battery current setpoint.
 The Python code uses asyncio, async-enabled python-can and aiomqtt packages
 for cooperative multitasking.
 
-Battery-management CAN bus interface is supposed to be facilitated using
-the Linux kernel socket-can API. Hardware interfaces are e.g. using the
-Raspberry Pi and a multiple-CAN-bus-interface, or, alternatively, using
+Battery-management CAN bus interface is facilitated using the Linux kernel
+socket-can API. Hardware interfaces are e.g. using the Raspberry Pi and a
+multiple-CAN-bus-interface, or, alternatively, using
 multiple USB-to-CAN adapters based on CANable-compatible firmware.
 
 The gateway application is configured via text file in user home folder:
@@ -49,6 +47,58 @@ cd ~/src
 git clone https://github.com/ul-gh/bms_gateway
 cd bms_gateway
 pip install .
+```
+
+## Configuration
+See config file.
+A template is stored at [src/bms_config_default.toml](src/bms_config_default.toml),
+this will be copied to user home folder at initialization.
+
+Structure of configuration file at ~/.bms_gateway/bms_config.toml:
+```
+#### BMS gateway configuration ####
+
+# Set this to true to enable the gateway application!
+GATEWAY-ACTIVATED = false
+
+
+#### Settings for MQTT broadcaster.
+#### System state (state of all parallel connected battery BMS) is encoded
+#### in JSON format and pushed periodically on the specified topic.
+
+[mqtt]
+(...)
+
+
+#### Settings for total values of all parallel connected batteries
+
+[battery]
+(...)
+
+
+#### List here all configured output BMSes.
+#### Each output BMS interface is supposed to be connected to an
+#### inverter BMS CAN input using an individual CAN interface.
+
+# First virtual (emulated) output BMS, connected to one physical inverter
+[[bmses-out]]
+(...)
+
+# Second inverter and so on...
+[[bmses-out]]
+(...)
+
+
+#### List here all configured input BMSes (connected to battery modules).
+#### Each input BMS must be connected to an individual CAN interface.
+
+# First input BMS (connected to one battery module BMS)
+[[bmses-in]]
+(...)
+
+# Second input BMS and so on...
+[[bmses-in]]
+(...)
 ```
 
 ## Usage

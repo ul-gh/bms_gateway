@@ -40,7 +40,6 @@ class BMSState:
 @dataclass
 class Errors:
     """BMS Error flags."""
-
     oc_discharge: bool = True
     oc_charge: bool = True
     overvoltage: bool = True
@@ -75,7 +74,6 @@ class Errors:
 @dataclass
 class Warnings:
     """BMS Warning flags."""
-
     oc_discharge: bool = True
     oc_charge: bool = True
     overvoltage: bool = True

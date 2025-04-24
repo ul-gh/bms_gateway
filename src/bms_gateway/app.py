@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Multiplexing n x CAN - to - m x CAN and simultaneous CAN - to - MQTT Gateway
 for LV (48V) Battery Management Systems using Pylontech Protocol.
----
 
 Pylontech protocol, while imitating the SMA Sunny Island CAN-Bus BMS protocol,
 has found widespread adoption for Low-Voltage (LV) Li-Ion
@@ -21,9 +20,9 @@ at any given time by setting and limiting battery current setpoint.
 The Python code uses asyncio, async-enabled python-can and aiomqtt packages
 for cooperative multitasking.
 
-Battery-management CAN bus interface is supposed to be facilitated using
-the Linux kernel socket-can API. Hardware interfaces are e.g. using the
-Raspberry Pi and a multiple-CAN-bus-interface, or, alternatively, using
+Battery-management CAN bus interface is facilitated using the Linux kernel
+socket-can API. Hardware interfaces are e.g. using the Raspberry Pi and a
+multiple-CAN-bus-interface, or, alternatively, using
 multiple USB-to-CAN adapters based on CANable-compatible firmware.
 
 The gateway application is configured via text file in user home folder:

@@ -19,15 +19,32 @@ CONFIG_FILE_NAME: str = "bms_config.toml"
 DEFAULT_CONFIG_FILE_NAME: str = "bms_config_default.toml"
 
 @dataclass
+class MQTTConfig():
+    """Settings for MQTT broadcaster.
+    System state (state of all parallel connected battery BMS) is encoded
+    in JSON format and pushed periodically on the specified topic.
+    """
+    # Setting this to false disables transmitting of MQTT telegrams
+    ACTIVATED: bool = True
+    TOPIC: str = "tele/bms/state"
+    BROKER: str = "localhost"
+    PORT: int = 1883
+    # MQTT minimum broadcast (transmit) time interval in seconds.
+    # If one or more input BMSes stop submitting state updates,
+    # MQTT broadcast is also stopped.
+    INTERVAL: float = 10.0
+
+@dataclass
 class Battery_Config():
     """Settings for total values of all parallel connected batteries"""
+    # Maximum charging current limit in Amperes for total battery stack
     I_LIM_CHARGE: float = 300.0
-    # Maximum discharging current limit in Amperes as communicated to inverter
+    # Maximum discharging current limit in Amperes for total battery stack
     I_LIM_DISCHARGE: float = 300.0
-    # Apply this scaling factor to the reported current.
+    # Apply this scaling factor to the reported total battery stack current.
     # This can be used for total influx or outgoing power control.
     I_TOT_SCALING: float = 1.0
-    # Apply this static offset in Amperes to the reported current
+    # Apply this static offset in Amperes to the total battery stack current
     I_TOT_OFFSET: float = 0.0
 
 @dataclass
@@ -36,46 +53,37 @@ class BMS_Out_Config():
     # Dedicated CAN interface for this BMS (connected to a single battery inverter)
     CAN_IF: str = "vcan0"
     # Text description for the emulated BMS
-    DESCRIPTION: str = "Virtual BMS"
+    DESCRIPTION: str = "Virtual BMS 1"
     # Maximum charging current limit in Amperes as communicated to inverter
     I_LIM_CHARGE: float = 300.0
     # Maximum discharging current limit in Amperes as communicated to inverter
     I_LIM_DISCHARGE: float = 300.0
-    # Apply this static scaling factor to the reported current.
-    # This should be the individual inverter power divided by the total
-    # power of all paralell connected inverters
+    # Apply this scaling factor to the reported current.
+    # This should be the individual inverter design current limit divided by the
+    # sum of all design current limits of all paralell connected inverters.
     I_SCALING: float = 1.0
     # Apply this static offset in Amperes to the reported current
     I_OFFSET: float = 0.0
-    # Send CAN sync-telegram (CAN-ID 0x305, data 8x 0x00) periodically to inverter
-    # if this is set to true
+    # Send CAN sync-telegram (CAN-ID 0x305, data 8x 0x00) periodically
+    # to inverter if this is set to true.
     SEND_SYNC_ACTIVATED: bool = False
-    # Cycle time in seconds for CAN sync-telegram
+    # Cycle time in seconds for transmitting the CAN inverter sync-telegram
     SYNC_INTERVAL: float = 5.0
 
 @dataclass
 class BMS_In_Config():
     """Settings for input BMS"""
-    # Dedicated CAN interface for this BMS
+    # Dedicated CAN interface for this BMS (connected to one battery module)
     CAN_IF: str = "vcan1"
-    # Text description for each of the BMS channels
-    DESCRIPTION: str = "Battery Rack 1 Left", "Battery Rack 2 Right"
-    # Battery pack capacity in ampere-hours (ah) for individual input BMSes.
+    # Text description for battery module BMS
+    DESCRIPTION: str = "Battery Rack 1 Left"
+    # Battery pack capacity in ampere-hours (Ah) for this module.
     # This is used as a weighting-factor for calculation of SOC, SOH etc.
     CAPACITY_AH: float = 1400
-    # If set to a value in seconds, poll the BMS by
-    # periodically sending an inverter sync telegram
+    # If set, using this time interval in seconds, poll the BMS by
+    # periodically sending an inverter sync/ackknowledge telegram.
     POLL_INTERVAL: float = None
 
-@dataclass
-class MQTTConfig():
-    """Settings for MQTT broadcaster"""
-    ACTIVATED: bool = True
-    TOPIC: str = "tele/bms/state"
-    BROKER: str = "localhost"
-    PORT: int = 1883
-    # MQTT broadcast (transmit) interval in seconds
-    INTERVAL: float = 10.0
 
 @dataclass
 class AppConfig():

@@ -3,32 +3,43 @@
 # Set this to true to enable the gateway application!
 GATEWAY-ACTIVATED = false
 
-#### Settings for MQTT broadcaster
+
+#### Settings for MQTT broadcaster.
+#### System state (state of all parallel connected battery BMS) is encoded
+#### in JSON format and pushed periodically on the specified topic.
+
 [mqtt]
+# Setting this to false disables transmitting of MQTT telegrams
 ACTIVATED = true
+# MQTT topic for transmitted state update telegram
 TOPIC = "tele/bms/state"
 BROKER = "localhost"
 PORT = 1883
-# MQTT broadcast (transmit) interval in seconds
+# MQTT minimum broadcast (transmit) time interval in seconds.
+# If one or more input BMSes stop submitting state updates,
+# MQTT broadcast is also stopped.
 INTERVAL = 10.0
 
+
 #### Settings for total values of all parallel connected batteries
+
 [battery]
-# Maximum charging current limit in Amperes as communicated to inverter
+# Maximum charging current limit in Amperes for total battery stack
 I-LIM-CHARGE = 300.0
-# Maximum discharging current limit in Amperes as communicated to inverter
+# Maximum discharging current limit in Amperes for total battery stack
 I-LIM-DISCHARGE = 300.0
-# Apply this static scaling factor to the reported current.
-# This should be the individual inverter power divided by the total
-# power of all paralell connected inverters
+# Apply this static scaling factor to the reported total battery stack current.
+# This can be used for total influx or outgoing power control.
 I-TOT-SCALING = 1.0
-# Apply this static offset in Amperes to the reported current
+# Apply this static offset in Amperes to the total battery stack current
 I-TOT-OFFSET = 0.0
 
-#### List here all configured output BMSes.
-#### Each output BMS must be connected to an inverter BMS CAN input
-#### using an individual CAN interface.
 
+#### List here all configured output BMSes.
+#### Each output BMS interface is supposed to be connected to an
+#### inverter BMS CAN input using an individual CAN interface.
+
+# First virtual (emulated) output BMS, connected to one physical inverter
 [[bmses-out]]
 # Dedicated CAN interface for this BMS (connected to a single battery inverter)
 CAN-IF = "vcan0"
@@ -38,42 +49,47 @@ DESCRIPTION = "Virtual BMS 1"
 I-LIM-CHARGE = 300.0
 # Maximum discharging current limit in Amperes as communicated to inverter
 I-LIM-DISCHARGE = 300.0
-# Apply this static scaling factor to the reported current.
-# This should be the individual inverter power divided by the total
-# power of all paralell connected inverters
+# Apply this scaling factor to the reported current.
+# This should be the individual inverter design current limit divided by the
+# sum of all design current limits of all paralell connected inverters.
 I-SCALING = 1.0
 # Apply this static offset in Amperes to the reported current
 I-OFFSET = 0.0
-# Send CAN sync-telegram (CAN-ID 0x305, data 8x 0x00) periodically to inverter
-# if this is set to true
+# MQTT minimum broadcast (transmit) time interval in seconds.
+# If one or more input BMSes stop submitting state updates,
+# MQTT broadcast is also stopped.
 SEND-SYNC-ACTIVATED = false
-# Cycle time in seconds for CAN sync-telegram
+# Cycle time in seconds for transmitting the CAN inverter sync-telegram
 SYNC-INTERVAL = 5.0
 
+## Second inverter and so on...
+#[[bmses-out]]
+#(...)
 
-#### List here all configured input BMSes.
+
+#### List here all configured input BMSes (connected to battery modules)
 #### Each input BMS must be connected to an individual CAN interface.
 
-# First BMS
+# First input BMS (connected to one battery module BMS)
 [[bmses-in]]
-# Dedicated CAN interface for this BMS
+# Dedicated CAN interface for this BMS (connected to one battery module)
 CAN-IF = "vcan1"
-# Text description for the BMS channels
+# Text description for battery module BMS
 DESCRIPTION = "Battery Rack 1 Left"
-# Battery pack capacity in ampere-hours (ah) for individual input BMS.
+# Battery pack capacity in ampere-hours (Ah) for this BMS.
 # This is used as a weighting-factor for calculation of SOC, SOH etc.
 CAPACITY-AH = 1400.0
-# If set to a value in seconds, poll the BMS by
-# periodically sending an inverter sync telegram
+# If uncommented, using this time interval in seconds, poll the BMS by
+# periodically sending an inverter sync/ackknowledge telegram.
 #POLL-INTERVAL = 5.0
 
-# Second BMS and so on...
+# Second input BMS and so on...
 [[bmses-in]]
-# Dedicated CAN interface for this BMS
+# Dedicated CAN interface for this BMS (connected to one battery module)
 CAN-IF = "vcan2"
-# Text description for the BMS channels
+# Text description for battery module BMS
 DESCRIPTION = "Battery Rack 2 Right"
-# Battery pack capacity in ampere-hours (ah) for individual input BMS.
+# Battery pack capacity in ampere-hours (Ah) for this module.
 # This is used as a weighting-factor for calculation of SOC, SOH etc.
 CAPACITY-AH = 1400.0
 # If set to a value in seconds, poll the BMS by
