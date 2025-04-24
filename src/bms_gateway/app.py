@@ -14,7 +14,7 @@ connected to one or more batteries.
 Battery data is also published via MQTT telemetry for
 keeping track of system state and for system control.
 
-This also allows for easy control of instantaneous influx and outgoing power
+This also allows for control of instantaneous influx and outgoing power
 at any given time by setting and limiting battery current setpoint.
 
 The Python code uses asyncio, async-enabled python-can and aiomqtt packages

@@ -14,7 +14,7 @@ connected to one or more batteries.
 Battery data is also published via MQTT telemetry for
 keeping track of system state and for system control.
 
-This also allows for easy control of instantaneous influx and outgoing power
+This also allows for control of instantaneous influx and outgoing power
 at any given time by setting and limiting battery current setpoint.
 
 The Python code uses asyncio, async-enabled python-can and aiomqtt packages
@@ -51,7 +51,7 @@ pip install .
 
 ## Configuration
 See config file.
-A template is stored at [src/bms_config_default.toml](src/bms_config_default.toml),
+A template is stored at [src/bms_config_default.toml](src/bms_gateway/bms_config_default.toml),
 this will be copied to user home folder at initialization.
 
 Structure of configuration file at ~/.bms_gateway/bms_config.toml:
