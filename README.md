@@ -8,9 +8,12 @@ Pylontech protocol, while imitating the SMA Sunny Island CAN-Bus BMS protocol,
 has found widespread adoption for Low-Voltage (LV) Li-Ion
 battery energy storage systems (BESS).
 
-This is intended for (massive) parallel operation of multiple Low-Voltage
+This is intended for (massive) parallel operation of one or more Low-Voltage
 Lithium-Ion-Batteries which do not supply a paralleling option
-by default. Battery data is also published via MQTT telemetry for
+by default, and/or for parallel operation of multiple LV battery inverters
+connected to one or more batteries.
+
+Battery data is also published via MQTT telemetry for
 keeping track of system state and for system control.
 
 This also allows for easy control of instantaneous influx and outgoing power
@@ -37,7 +40,7 @@ Or, alternatively, using multiple USB-to-CAN adapters based on CANable-compatibl
 
 ![UCAN Board Based on STM32F072 USB to CAN Adapter image](doc/ucan_canable_compatible_usb_can_adapter.jpg "UCAN Board Based on STM32F072 USB to CAN Adapter")
 
-2025-04-25 Ulrich Lukas
+2025-04-24 Ulrich Lukas
 ## Incomplete and for testing purposes only!
 
 ## Installation

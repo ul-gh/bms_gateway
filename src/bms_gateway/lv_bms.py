@@ -186,10 +186,17 @@ class BMS_Out():
                     self.bus.send(msg)
 
     def _bms_encode(self, state: BMSState) -> list[can.Message]:
+        conf = self.config
+        # Apply inverter current setpoint limits in addition to battery limits
+        i_lim_charge = min(state.i_lim_charge, conf.I_LIM_CHARGE)
+        i_lim_discharge = min(state.i_lim_discharge, conf.I_LIM_DISCHARGE)
+        # Apply inverter current scaling factor and offset for this inverter
+        i_total = state.i_total * conf.I_SCALING + conf.I_OFFSET
+        # Generate outgoing CAN messages
         msg_351 = (
             int(10 * state.v_charge_cmd).to_bytes(2, "little")
-            + int(10 * state.i_lim_charge).to_bytes(2, "little", signed=True)
-            + int(10 * state.i_lim_discharge).to_bytes(2, "little", signed=True)
+            + int(10 * i_lim_charge).to_bytes(2, "little", signed=True)
+            + int(10 * i_lim_discharge).to_bytes(2, "little", signed=True)
         )
         msg_355 = (
             int(state.soc).to_bytes(2, "little")
@@ -197,7 +204,7 @@ class BMS_Out():
         )
         msg_356 = (
             int(100 * state.v_avg).to_bytes(2, "little", signed=True)
-            + int(10 * state.i_total).to_bytes(2, "little", signed=True)
+            + int(10 * i_total).to_bytes(2, "little", signed=True)
             + int(10 * state.t_avg).to_bytes(2, "little", signed=True)
         )
         msg_359 = bytes((

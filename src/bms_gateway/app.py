@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Multiplexing n x CAN - to - CAN and simultaneous CAN - to - MQTT Gateway
+"""Multiplexing n x CAN - to - m x CAN and simultaneous CAN - to - MQTT Gateway
 for LV (48V) Battery Management Systems using Pylontech Protocol.
 ---
 
@@ -7,9 +7,12 @@ Pylontech protocol, while imitating the SMA Sunny Island CAN-Bus BMS protocol,
 has found widespread adoption for Low-Voltage (LV) Li-Ion
 battery energy storage systems (BESS).
 
-This is intended for (massive) parallel operation of multiple Low-Voltage
+This is intended for (massive) parallel operation of one or more Low-Voltage
 Lithium-Ion-Batteries which do not supply a paralleling option
-by default. Battery data is also published via MQTT telemetry for
+by default, and/or for parallel operation of multiple LV battery inverters
+connected to one or more batteries.
+
+Battery data is also published via MQTT telemetry for
 keeping track of system state and for system control.
 
 This also allows for easy control of instantaneous influx and outgoing power
@@ -28,7 +31,7 @@ The gateway application is configured via text file in user home folder:
 
 This file must be edited to suit application details.
 
-2025-04-25 Ulrich Lukas
+2025-04-24 Ulrich Lukas
 """
 import argparse
 import asyncio
@@ -60,7 +63,7 @@ conf = app_config.init_or_read_from_config_file(init=cmdline.init)
 t_main: threading.Thread = None
 thread_stop = threading.Event()
 
-multiplexer = BMSMultiplexer(conf.bms_out)
+multiplexer = BMSMultiplexer(conf.battery)
 
 
 async def main_task() -> None:
@@ -68,17 +71,23 @@ async def main_task() -> None:
         bmses_in = [BMS_In(bms_conf) for bms_conf in conf.bmses_in]
         for bms in bmses_in:
             await stack.enter_async_context(bms)
-        bms_out = BMS_Out(conf.bms_out)
-        await stack.enter_async_context(bms_out)
+        bmses_out = [BMS_Out(bms_conf) for bms_conf in conf.bmses_out]
+        for bms in bmses_out:
+            await stack.enter_async_context(bms)
         if conf.mqtt.ACTIVATED:
             mqtt_out = MQTTBroadcaster(conf.mqtt)  
             await stack.enter_async_context(mqtt_out)
         while not thread_stop.isSet():
+            # Read all input BMSes
             getters = (bms.get_state() for bms in bmses_in)
             states_in = await asyncio.gather(*getters)
+            # Calculate total and average values, error flags and corrections
             state_out = multiplexer.calculate_result_state(states_in)
             logger.debug(state_out)
-            await bms_out.set_state(state_out)
+            # Set calculated state on all virtual output BMSes.
+            # Individual current scaling values are applied from config file.
+            setters = (bms.set_state(state_out) for bms in bmses_out)
+            await asyncio.gather(*setters)
             if conf.mqtt.ACTIVATED:
                 await mqtt_out.set_state(state_out)
 

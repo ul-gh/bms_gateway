@@ -3,7 +3,7 @@
 Do not edit the configuration values herein, they will be
 overwritten from config file, see file names below!
 
-2025-04-25 Ulrich Lukas
+2025-04-24 Ulrich Lukas
 """
 import sys
 import logging
@@ -19,9 +19,21 @@ CONFIG_FILE_NAME: str = "bms_config.toml"
 DEFAULT_CONFIG_FILE_NAME: str = "bms_config_default.toml"
 
 @dataclass
+class Battery_Config():
+    """Settings for total values of all parallel connected batteries"""
+    I_LIM_CHARGE: float = 300.0
+    # Maximum discharging current limit in Amperes as communicated to inverter
+    I_LIM_DISCHARGE: float = 300.0
+    # Apply this scaling factor to the reported current.
+    # This can be used for total influx or outgoing power control.
+    I_TOT_SCALING: float = 1.0
+    # Apply this static offset in Amperes to the reported current
+    I_TOT_OFFSET: float = 0.0
+
+@dataclass
 class BMS_Out_Config():
     """Settings for emulated (output) BMS"""
-    # Dedicated CAN interface for this BMS
+    # Dedicated CAN interface for this BMS (connected to a single battery inverter)
     CAN_IF: str = "vcan0"
     # Text description for the emulated BMS
     DESCRIPTION: str = "Virtual BMS"
@@ -29,10 +41,12 @@ class BMS_Out_Config():
     I_LIM_CHARGE: float = 300.0
     # Maximum discharging current limit in Amperes as communicated to inverter
     I_LIM_DISCHARGE: float = 300.0
-    # Apply this static scaling factor to the reported current
-    I_TOT_SCALING: float = 1.0
+    # Apply this static scaling factor to the reported current.
+    # This should be the individual inverter power divided by the total
+    # power of all paralell connected inverters
+    I_SCALING: float = 1.0
     # Apply this static offset in Amperes to the reported current
-    I_TOT_OFFSET: float = 0.0
+    I_OFFSET: float = 0.0
     # Send CAN sync-telegram (CAN-ID 0x305, data 8x 0x00) periodically to inverter
     # if this is set to true
     SEND_SYNC_ACTIVATED: bool = False
@@ -68,8 +82,9 @@ class AppConfig():
     """All application settings"""
     GATEWAY_ACTIVATED: bool
     mqtt: MQTTConfig
-    bms_out: BMS_Out_Config
+    battery: Battery_Config
     bmses_in: list[BMS_In_Config]
+    bmses_out: list[BMS_Out_Config]
 
 
 def init_or_read_from_config_file(init=False) -> AppConfig:

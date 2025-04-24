@@ -12,21 +12,38 @@ PORT = 1883
 # MQTT broadcast (transmit) interval in seconds
 INTERVAL = 10.0
 
-
-#### Settings for emulated (output) BMS
-[bms-out]
-# Dedicated CAN interface for this BMS
-CAN-IF = "vcan0"
-# Text description for the emulated BMS
-DESCRIPTION = "Virtual BMS"
+#### Settings for total values of all parallel connected batteries
+[battery]
 # Maximum charging current limit in Amperes as communicated to inverter
 I-LIM-CHARGE = 300.0
 # Maximum discharging current limit in Amperes as communicated to inverter
 I-LIM-DISCHARGE = 300.0
-# Apply this static scaling factor to the reported current
+# Apply this static scaling factor to the reported current.
+# This should be the individual inverter power divided by the total
+# power of all paralell connected inverters
 I-TOT-SCALING = 1.0
 # Apply this static offset in Amperes to the reported current
 I-TOT-OFFSET = 0.0
+
+#### List here all configured output BMSes.
+#### Each output BMS must be connected to an inverter BMS CAN input
+#### using an individual CAN interface.
+
+[[bmses-out]]
+# Dedicated CAN interface for this BMS (connected to a single battery inverter)
+CAN-IF = "vcan0"
+# Text description for the emulated BMS
+DESCRIPTION = "Virtual BMS 1"
+# Maximum charging current limit in Amperes as communicated to inverter
+I-LIM-CHARGE = 300.0
+# Maximum discharging current limit in Amperes as communicated to inverter
+I-LIM-DISCHARGE = 300.0
+# Apply this static scaling factor to the reported current.
+# This should be the individual inverter power divided by the total
+# power of all paralell connected inverters
+I-SCALING = 1.0
+# Apply this static offset in Amperes to the reported current
+I-OFFSET = 0.0
 # Send CAN sync-telegram (CAN-ID 0x305, data 8x 0x00) periodically to inverter
 # if this is set to true
 SEND-SYNC-ACTIVATED = false

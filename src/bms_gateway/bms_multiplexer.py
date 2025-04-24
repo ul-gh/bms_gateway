@@ -1,7 +1,7 @@
 import threading
 
 from .bms_state import BMSState
-from .app_config import BMS_Out_Config
+from .app_config import Battery_Config
 
 class BMSMultiplexer():
     """Multiplex n x BMS states into one (virtual BMS) output state object.
@@ -13,11 +13,11 @@ class BMSMultiplexer():
     For further (yet unimplemented) control in multithreaded environment,
     the scaling and limiting values can be set using thread-safe setter methods.
     """
-    def __init__(self, bms_out_conf: BMS_Out_Config):
-        self._i_lim_charge = bms_out_conf.I_LIM_CHARGE
-        self._i_lim_discharge = bms_out_conf.I_LIM_DISCHARGE
-        self._i_tot_scaling = bms_out_conf.I_TOT_SCALING
-        self._i_tot_offset = bms_out_conf.I_TOT_OFFSET
+    def __init__(self, battery_conf: Battery_Config):
+        self._i_lim_charge = battery_conf.I_LIM_CHARGE
+        self._i_lim_discharge = battery_conf.I_LIM_DISCHARGE
+        self._i_tot_scaling = battery_conf.I_TOT_SCALING
+        self._i_tot_offset = battery_conf.I_TOT_OFFSET
         self._thread_lock = threading.Lock()
 
     def set_i_tot_scaling(self, i_tot_scaling: float) -> None:
@@ -67,7 +67,7 @@ class BMSMultiplexer():
         Args:
             states_in:  input states
         Returns:
-            output states
+            output state
         """
         self._thread_lock.acquire()
         state = states_in[0].copy()
@@ -107,8 +107,8 @@ class BMSMultiplexer():
         state.v_avg *= avg_factor_n
         state.t_avg *= avg_factor_n
         # Apply scaling factor and offset to result current
-        state.i_total += self._i_tot_offset
         state.i_total *= self._i_tot_scaling
+        state.i_total += self._i_tot_offset
         # Apply total current limits, overriding current limits set by BMSes
         state.i_lim_charge = min(state.i_lim_charge, self._i_lim_charge)
         state.i_lim_discharge = min(state.i_lim_discharge, self._i_lim_discharge)
