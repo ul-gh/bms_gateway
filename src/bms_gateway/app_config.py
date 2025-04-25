@@ -66,7 +66,7 @@ class BMS_Out_Config():
     I_OFFSET: float = 0.0
     # Normal mode of operation is we push BMS state update to the connected
     # inverters as soon as it is available (from all connected BMSes),
-    # optionally introducing a delay if SYNC_INTERVAL is set > 0.0
+    # optionally introducing a delay if PUSH_MIN_DELAY is set > 0.0
     #
     # Limit rate of outgoing messages to inverter using this cycle time in seconds
     PUSH_MIN_DELAY: float = 0.0

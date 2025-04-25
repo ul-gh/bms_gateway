@@ -32,6 +32,17 @@ The gateway application is configured via text file in user home folder:
 
 This file must be edited to suit application details.
 
+Normal mode of operation is we push BMS state update to the connected
+inverters as soon as it is available (from all connected BMSes),
+optionally introducing a delay if SYNC_INTERVAL is set > 0.0 in config.
+
+If SEND_SYNC_ACTIVATED is set in config, instead of push mode, we wait for
+an inverter sync/acqknowledge-telegram (CAN-ID 0x305, data 8x 0x00)
+before sending the state update.
+
+This will also enable a periodic task sending an outgoing sync
+telegram periodically to initially and repeatedly trigger the cycle.
+
 Hardware interfaces are e.g. using the Raspberry Pi and a multiple-CAN-bus-interface:
 
 ![RPi Multiple Isolated CAN-Bus HAT image](doc/multiple_can_hat.jpg "RPi Multiple Isolated CAN-Bus HAT")

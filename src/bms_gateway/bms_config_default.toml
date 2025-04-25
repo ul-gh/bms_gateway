@@ -57,7 +57,7 @@ I-SCALING = 1.0
 I-OFFSET = 0.0
 # Normal mode of operation is we push BMS state update to the connected
 # inverters as soon as it is available (from all connected BMSes),
-# optionally introducing a delay if config.SYNC_INTERVAL is set > 0.0
+# optionally introducing a delay if PUSH_MIN_DELAY is set > 0.0
 #
 # Limit rate of outgoing messages to inverter using this cycle time in seconds
 PUSH-MIN-DELAY = 0.0
