@@ -1,0 +1,428 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="130.2085mm"
+   height="107.20849mm"
+   viewBox="0 0 130.20849 107.20849"
+   version="1.1"
+   id="svg5"
+   inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
+   sodipodi:docname="bms_gateway_application_example.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#ffffff"
+     bordercolor="#cccccc"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="1"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showgrid="false"
+     inkscape:zoom="1.2938725"
+     inkscape:cx="231.86211"
+     inkscape:cy="210.60808"
+     inkscape:window-width="1455"
+     inkscape:window-height="1236"
+     inkscape:window-x="992"
+     inkscape:window-y="88"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="layer1"
+     showguides="true"
+     shape-rendering="auto" />
+  <defs
+     id="defs2" />
+  <g
+     inkscape:label="Ebene 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(1.1042483,1.104242)">
+    <rect
+       style="fill:#ffffff;stroke:none;stroke-width:0.3;stroke-linecap:round;stroke-dasharray:none"
+       id="rect3683"
+       width="130.2085"
+       height="107.20849"
+       x="-1.1042483"
+       y="-1.104242" />
+    <g
+       id="g3290"
+       transform="translate(-33.193781,-69.733359)">
+      <rect
+         style="fill:none;stroke:#000000;stroke-width:0.499999;stroke-linecap:round;stroke-dasharray:none"
+         id="rect2937"
+         width="14.211418"
+         height="6.4345989"
+         x="50.376808"
+         y="115.66284" />
+      <rect
+         style="fill:none;stroke:#000000;stroke-width:0.5;stroke-linecap:round;stroke-dasharray:none"
+         id="rect2939"
+         width="30.038908"
+         height="28.459148"
+         x="34.549324"
+         y="108.14896"
+         rx="2"
+         ry="2.1485212" />
+      <text
+         xml:space="preserve"
+         style="font-size:4.23333px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';text-align:center;text-anchor:middle;fill:none;stroke:#000000;stroke-width:0.7;stroke-linecap:round;stroke-dasharray:none"
+         x="49.772762"
+         y="113.13517"
+         id="text2943"><tspan
+           sodipodi:role="line"
+           id="tspan2941"
+           style="fill:#000000;stroke:none;stroke-width:0.7"
+           x="49.772762"
+           y="113.13517">Battery Rack 2</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:4.23333px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';text-align:center;text-anchor:middle;fill:#000000;stroke:none;stroke-width:0.499999;stroke-linecap:round;stroke-dasharray:none"
+         x="57.765774"
+         y="120.358"
+         id="text2947"><tspan
+           sodipodi:role="line"
+           id="tspan2945"
+           style="stroke-width:0.5"
+           x="57.765774"
+           y="120.358">BMS 2</tspan></text>
+      <rect
+         style="fill:none;stroke:#000000;stroke-width:0.499999;stroke-linecap:round;stroke-dasharray:none"
+         id="rect2951"
+         width="30.038904"
+         height="4.7949791"
+         x="34.549324"
+         y="127.01914" />
+      <rect
+         style="fill:none;stroke:#000000;stroke-width:0.5;stroke-linecap:round;stroke-dasharray:none"
+         id="rect1306"
+         width="30.038908"
+         height="34.4454"
+         x="82.174324"
+         y="105.15583"
+         rx="2"
+         ry="2.1485212" />
+      <text
+         xml:space="preserve"
+         style="font-size:4.23333px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';text-align:center;text-anchor:middle;fill:none;stroke:#000000;stroke-width:0.7;stroke-linecap:round;stroke-dasharray:none"
+         x="97.064659"
+         y="120.75716"
+         id="text1310"><tspan
+           sodipodi:role="line"
+           id="tspan1308"
+           style="fill:#000000;stroke:none;stroke-width:0.7"
+           x="97.064659"
+           y="120.75716">BMS</tspan><tspan
+           sodipodi:role="line"
+           style="fill:#000000;stroke:none;stroke-width:0.7"
+           x="97.064659"
+           y="126.04882"
+           id="tspan2648">Gateway</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:4.23333px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';text-align:center;text-anchor:middle;fill:none;stroke:#000000;stroke-width:0.7;stroke-linecap:round;stroke-dasharray:none"
+         x="144.79761"
+         y="77.226021"
+         id="text1310-1"><tspan
+           sodipodi:role="line"
+           style="fill:#000000;stroke:none;stroke-width:0.7"
+           x="144.79761"
+           y="77.226021"
+           id="tspan2648-7">MQTT</tspan><tspan
+           sodipodi:role="line"
+           style="fill:#000000;stroke:none;stroke-width:0.7"
+           x="144.79761"
+           y="82.517685"
+           id="tspan2707">Telemetry</tspan><tspan
+           sodipodi:role="line"
+           style="fill:#000000;stroke:none;stroke-width:0.7"
+           x="144.79761"
+           y="87.809341"
+           id="tspan2994">and</tspan><tspan
+           sodipodi:role="line"
+           style="fill:#000000;stroke:none;stroke-width:0.7"
+           x="144.79761"
+           y="93.101006"
+           id="tspan2996">Control</tspan></text>
+      <rect
+         style="fill:none;stroke:#000000;stroke-width:0.499997;stroke-linecap:round;stroke-dasharray:none"
+         id="rect1627-9"
+         width="30.038908"
+         height="25.389736"
+         x="129.79932"
+         y="70.81694"
+         rx="2"
+         ry="1.9999999" />
+      <g
+         id="g2749"
+         transform="translate(0,17.957417)">
+        <rect
+           style="fill:none;stroke:#000000;stroke-width:0.499998;stroke-linecap:round;stroke-dasharray:none"
+           id="rect1627"
+           width="30.038908"
+           height="7.2073965"
+           x="129.79933"
+           y="89.28083"
+           rx="2"
+           ry="2" />
+        <text
+           xml:space="preserve"
+           style="font-size:4.23333px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';text-align:center;text-anchor:middle;fill:none;stroke:#000000;stroke-width:0.7;stroke-linecap:round;stroke-dasharray:none"
+           x="145.02277"
+           y="94.267036"
+           id="text1631"><tspan
+             sodipodi:role="line"
+             id="tspan1629"
+             style="fill:#000000;stroke:none;stroke-width:0.7"
+             x="145.02277"
+             y="94.267036">Inverter 1</tspan></text>
+      </g>
+      <g
+         id="g3026"
+         transform="translate(0,3.7594937)">
+        <rect
+           style="fill:none;stroke:#000000;stroke-width:0.499998;stroke-linecap:round;stroke-dasharray:none"
+           id="rect1656"
+           width="30.038908"
+           height="7.2073965"
+           x="129.79933"
+           y="123.19945"
+           rx="2"
+           ry="2" />
+        <text
+           xml:space="preserve"
+           style="font-size:4.23333px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';text-align:center;text-anchor:middle;fill:none;stroke:#000000;stroke-width:0.7;stroke-linecap:round;stroke-dasharray:none"
+           x="145.02277"
+           y="128.18565"
+           id="text1660"><tspan
+             sodipodi:role="line"
+             id="tspan1658"
+             style="fill:#000000;stroke:none;stroke-width:0.7"
+             x="145.02277"
+             y="128.18565">Inverter 2</tspan></text>
+      </g>
+      <rect
+         style="fill:none;stroke:#000000;stroke-width:0.499998;stroke-linecap:round;stroke-dasharray:none"
+         id="rect1664"
+         width="30.038908"
+         height="7.2073965"
+         x="129.79933"
+         y="146.67963"
+         rx="2"
+         ry="2" />
+      <text
+         xml:space="preserve"
+         style="font-size:4.23333px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';text-align:center;text-anchor:middle;fill:none;stroke:#000000;stroke-width:0.7;stroke-linecap:round;stroke-dasharray:none"
+         x="145.02277"
+         y="151.66585"
+         id="text1668"><tspan
+           sodipodi:role="line"
+           id="tspan1666"
+           style="fill:#000000;stroke:none;stroke-width:0.7"
+           x="145.02277"
+           y="151.66585">Inverter 3</tspan></text>
+      <g
+         id="g3005"
+         transform="translate(0,0.86757546)">
+        <rect
+           style="fill:none;stroke:#000000;stroke-width:0.499998;stroke-linecap:round;stroke-dasharray:none"
+           id="rect1672"
+           width="30.038908"
+           height="7.2073965"
+           x="129.79933"
+           y="165.53282"
+           rx="2"
+           ry="2" />
+        <text
+           xml:space="preserve"
+           style="font-size:4.23333px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';text-align:center;text-anchor:middle;fill:none;stroke:#000000;stroke-width:0.7;stroke-linecap:round;stroke-dasharray:none"
+           x="145.02277"
+           y="170.51903"
+           id="text1676"><tspan
+             sodipodi:role="line"
+             id="tspan1674"
+             style="fill:#000000;stroke:none;stroke-width:0.7"
+             x="145.02277"
+             y="170.51903">Inverter 4</tspan></text>
+      </g>
+      <path
+         style="display:inline;fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         d="M 112.21323,110.12116 130.21484,95.430067"
+         id="path2623"
+         inkscape:connector-type="polyline"
+         inkscape:connector-curvature="0"
+         inkscape:connection-start="#rect1306"
+         inkscape:connection-end="#rect1627-9" />
+      <path
+         style="display:inline;fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         d="m 130.87306,114.22013 -18.65983,4.52012"
+         id="path2625"
+         inkscape:connector-type="polyline"
+         inkscape:connector-curvature="0"
+         inkscape:connection-end="#rect1306"
+         inkscape:connection-start="#g2749" />
+      <path
+         style="display:inline;fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         d="M 138.66837,146.67963 112.21323,131.17884"
+         id="path2629"
+         inkscape:connector-type="polyline"
+         inkscape:connector-curvature="0"
+         inkscape:connection-end="#rect1306"
+         inkscape:connection-start="#rect1664" />
+      <path
+         style="display:inline;fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         d="m 141.21513,166.4004 -29.0019,-29.00224"
+         id="path2631"
+         inkscape:connector-type="polyline"
+         inkscape:connector-curvature="0"
+         inkscape:connection-end="#rect1306"
+         inkscape:connection-start="#rect1672" />
+      <path
+         style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         d="m 112.21323,124.95955 17.81754,3.06185"
+         id="path2865"
+         inkscape:connector-type="polyline"
+         inkscape:connector-curvature="0"
+         inkscape:connection-start="#rect1306"
+         inkscape:connection-end="#rect1656" />
+      <rect
+         style="fill:none;stroke:#000000;stroke-width:0.499999;stroke-linecap:round;stroke-dasharray:none"
+         id="rect2962"
+         width="14.211418"
+         height="6.4345989"
+         x="50.376808"
+         y="78.62117" />
+      <rect
+         style="fill:none;stroke:#000000;stroke-width:0.5;stroke-linecap:round;stroke-dasharray:none"
+         id="rect2964"
+         width="30.038908"
+         height="28.459148"
+         x="34.549324"
+         y="71.107285"
+         rx="2"
+         ry="2.1485212" />
+      <text
+         xml:space="preserve"
+         style="font-size:4.23333px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';text-align:center;text-anchor:middle;fill:none;stroke:#000000;stroke-width:0.7;stroke-linecap:round;stroke-dasharray:none"
+         x="49.772762"
+         y="76.093498"
+         id="text2968"><tspan
+           sodipodi:role="line"
+           id="tspan2966"
+           style="fill:#000000;stroke:none;stroke-width:0.7"
+           x="49.772762"
+           y="76.093498">Battery Rack 1</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:4.23333px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';text-align:center;text-anchor:middle;fill:#000000;stroke:none;stroke-width:0.499999;stroke-linecap:round;stroke-dasharray:none"
+         x="57.765774"
+         y="83.31633"
+         id="text2972"><tspan
+           sodipodi:role="line"
+           id="tspan2970"
+           style="stroke-width:0.5"
+           x="57.765774"
+           y="83.31633">BMS 1</tspan></text>
+      <rect
+         style="fill:none;stroke:#000000;stroke-width:0.499999;stroke-linecap:round;stroke-dasharray:none"
+         id="rect2974"
+         width="30.038904"
+         height="4.7949791"
+         x="34.549324"
+         y="89.97747" />
+      <rect
+         style="fill:none;stroke:#000000;stroke-width:0.499999;stroke-linecap:round;stroke-dasharray:none"
+         id="rect2978"
+         width="14.211418"
+         height="6.4345989"
+         x="50.376808"
+         y="152.70451" />
+      <rect
+         style="fill:none;stroke:#000000;stroke-width:0.5;stroke-linecap:round;stroke-dasharray:none"
+         id="rect2980"
+         width="30.038908"
+         height="28.459148"
+         x="34.549324"
+         y="145.19063"
+         rx="2"
+         ry="2.1485212" />
+      <text
+         xml:space="preserve"
+         style="font-size:4.23333px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';text-align:center;text-anchor:middle;fill:none;stroke:#000000;stroke-width:0.7;stroke-linecap:round;stroke-dasharray:none"
+         x="49.772762"
+         y="150.17683"
+         id="text2984"><tspan
+           sodipodi:role="line"
+           id="tspan2982"
+           style="fill:#000000;stroke:none;stroke-width:0.7"
+           x="49.772762"
+           y="150.17683">Battery Rack 3</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:4.23333px;font-family:sans-serif;-inkscape-font-specification:'sans-serif, Normal';text-align:center;text-anchor:middle;fill:#000000;stroke:none;stroke-width:0.499999;stroke-linecap:round;stroke-dasharray:none"
+         x="57.765774"
+         y="157.39967"
+         id="text2988"><tspan
+           sodipodi:role="line"
+           id="tspan2986"
+           style="stroke-width:0.5"
+           x="57.765774"
+           y="157.39967">BMS 3</tspan></text>
+      <rect
+         style="fill:none;stroke:#000000;stroke-width:0.499999;stroke-linecap:round;stroke-dasharray:none"
+         id="rect2990"
+         width="30.038904"
+         height="4.7949791"
+         x="34.549324"
+         y="164.06081" />
+      <path
+         style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         d="M 83.455915,105.29758 64.588226,81.83847"
+         id="path3181"
+         inkscape:connector-type="polyline"
+         inkscape:connector-curvature="0"
+         inkscape:connection-start="#rect1306"
+         sodipodi:nodetypes="cc" />
+      <path
+         style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         d="M 82.200539,137.80297 64.588226,155.92181"
+         id="path3183"
+         inkscape:connector-type="polyline"
+         inkscape:connector-curvature="0"
+         inkscape:connection-start="#rect1306"
+         sodipodi:nodetypes="cc" />
+      <path
+         style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         d="M 82.174324,120.76703 64.588225,118.88014"
+         id="path3234"
+         inkscape:connector-type="polyline"
+         inkscape:connector-curvature="0"
+         inkscape:connection-start="#rect1306" />
+    </g>
+  </g>
+  <metadata
+     id="metadata3486">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <cc:license
+           rdf:resource="http://creativecommons.org/publicdomain/zero/1.0/" />
+      </cc:Work>
+      <cc:License
+         rdf:about="http://creativecommons.org/publicdomain/zero/1.0/">
+        <cc:permits
+           rdf:resource="http://creativecommons.org/ns#Reproduction" />
+        <cc:permits
+           rdf:resource="http://creativecommons.org/ns#Distribution" />
+        <cc:permits
+           rdf:resource="http://creativecommons.org/ns#DerivativeWorks" />
+      </cc:License>
+    </rdf:RDF>
+  </metadata>
+</svg>

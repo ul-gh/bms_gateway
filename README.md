@@ -2,6 +2,8 @@
 Multiplexing n x m CAN-to-CAN and simultaneous CAN-to-MQTT Gateway
 for LV (48V) Battery Management Systems using Pylontech Protocol.
 
+![BMS Gateway Application Illustration](doc/bms_gateway_application_example.svg)
+
 Pylontech protocol, while imitating the SMA Sunny Island CAN-Bus BMS protocol,
 has found widespread adoption for Low-Voltage (LV) Li-Ion
 battery energy storage systems (BESS).
@@ -45,11 +47,11 @@ telegram periodically to initially and repeatedly trigger the cycle.
 
 Hardware interfaces are e.g. using the Raspberry Pi and a multiple-CAN-bus-interface:
 
-![RPi Multiple Isolated CAN-Bus HAT image](doc/multiple_can_hat.jpg "RPi Multiple Isolated CAN-Bus HAT")
+![RPi Multiple Isolated CAN-Bus HAT image](doc/multiple_can_hat.jpg)
 
 Or, alternatively, using multiple USB-to-CAN adapters based on CANable-compatible firmware:
 
-![UCAN Board Based on STM32F072 USB to CAN Adapter image](doc/ucan_canable_compatible_usb_can_adapter.jpg "UCAN Board Based on STM32F072 USB to CAN Adapter")
+![UCAN Board Based on STM32F072 USB to CAN Adapter image](doc/ucan_canable_compatible_usb_can_adapter.jpg)
 
 2025-04-24 Ulrich Lukas
 ## Incomplete and for testing purposes only!
