@@ -34,7 +34,7 @@ This file must be edited to suit application details.
 
 Normal mode of operation is we push BMS state update to the connected
 inverters as soon as it is available (from all connected BMSes),
-optionally introducing a delay if SYNC_INTERVAL is set > 0.0 in config.
+optionally introducing a delay if PUSH_MIN_DELAY is set > 0.0 in config.
 
 If SEND_SYNC_ACTIVATED is set in config, instead of push mode, we wait for
 an inverter sync/acqknowledge-telegram (CAN-ID 0x305, data 8x 0x00)

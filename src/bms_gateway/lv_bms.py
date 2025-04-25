@@ -155,7 +155,7 @@ class BMS_Out():
             assert isinstance(self._task_transmit_sync, can.CyclicSendTaskABC)
         # Normal mode of operation is we push BMS state update to the connected
         # inverters as soon as it is available (from all connected BMSes),
-        # optionally introducing a delay if conf.SYNC_INTERVAL is set > 0.0
+        # optionally introducing a delay if conf.PUSH_MIN_DELAY is set > 0.0
         #
         # If conf.SEND_SYNC_ACTIVATED is set, instead of push mode, we wait for
         # an inverter sync/acqknowledge-telegram (CAN-ID 0x305, data 8x 0x00)
