@@ -40,11 +40,6 @@ import logging
 import threading
 from contextlib import AsyncExitStack
 
-from . import app_config
-from .lv_bms import BMS_In, BMS_Out
-from .mqtt_broadcaster import MQTTBroadcaster
-from .bms_multiplexer import BMSMultiplexer
-
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
@@ -56,6 +51,12 @@ parser.add_argument("-v", "--verbose", action="store_true",
 cmdline = parser.parse_args()
 if cmdline.verbose:
     logging.basicConfig(level=logging.DEBUG)
+
+# Imports moved after logger setup to have log level apply to the application
+from . import app_config
+from .lv_bms import BMS_In, BMS_Out
+from .mqtt_broadcaster import MQTTBroadcaster
+from .bms_multiplexer import BMSMultiplexer
 
 # App configuration read from file: "~/bms_gateway/bms_config.toml"
 # Default configuration: See source tree file "bms_config_default.toml"
