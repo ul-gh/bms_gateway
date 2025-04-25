@@ -55,9 +55,18 @@ I-LIM-DISCHARGE = 300.0
 I-SCALING = 1.0
 # Apply this static offset in Amperes to the reported current
 I-OFFSET = 0.0
-# MQTT minimum broadcast (transmit) time interval in seconds.
-# If one or more input BMSes stop submitting state updates,
-# MQTT broadcast is also stopped.
+# Normal mode of operation is we push BMS state update to the connected
+# inverters as soon as it is available (from all connected BMSes),
+# optionally introducing a delay if config.SYNC_INTERVAL is set > 0.0
+#
+# Limit rate of outgoing messages to inverter using this cycle time in seconds
+PUSH-MIN-DELAY = 0.0
+# If SEND-SYNC-ACTIVATED is set, instead of push mode, we wait for
+# an inverter sync/acqknowledge-telegram (CAN-ID 0x305, data 8x 0x00)
+# before sending the state update.
+#
+# This will also enable a periodic task sending an outgoing sync telegram
+# periodically to initially and repeatedly trigger the cycle.
 SEND-SYNC-ACTIVATED = false
 # Cycle time in seconds for transmitting the CAN inverter sync-telegram
 SYNC-INTERVAL = 5.0

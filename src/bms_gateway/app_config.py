@@ -64,8 +64,18 @@ class BMS_Out_Config():
     I_SCALING: float = 1.0
     # Apply this static offset in Amperes to the reported current
     I_OFFSET: float = 0.0
-    # Send CAN sync-telegram (CAN-ID 0x305, data 8x 0x00) periodically
-    # to inverter if this is set to true.
+    # Normal mode of operation is we push BMS state update to the connected
+    # inverters as soon as it is available (from all connected BMSes),
+    # optionally introducing a delay if SYNC_INTERVAL is set > 0.0
+    #
+    # Limit rate of outgoing messages to inverter using this cycle time in seconds
+    PUSH_MIN_DELAY: float = 0.0
+    # If SEND_SYNC_ACTIVATED is set, instead of push mode, we wait for
+    # an inverter sync/acqknowledge-telegram (CAN-ID 0x305, data 8x 0x00)
+    # before sending the state update.
+    #
+    # This will also enable a periodic task sending an outgoing sync telegram
+    # periodically to initially and repeatedly trigger the cycle.
     SEND_SYNC_ACTIVATED: bool = False
     # Cycle time in seconds for transmitting the CAN inverter sync-telegram
     SYNC_INTERVAL: float = 5.0

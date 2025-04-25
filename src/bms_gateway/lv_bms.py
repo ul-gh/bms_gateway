@@ -133,9 +133,9 @@ class BMS_Out():
         self._reader: can.AsyncBufferedReader = None
         self._output_msgs: list[can.Message] = self._bms_encode(BMSState())
         # Option A: Send BMS state data cyclically when sync_interval is given
-        self._sync_task: can.CyclicSendTaskABC = None
+        self._task_transmit_sync: can.CyclicSendTaskABC = None
         # Option B: Send BMS state data when a SYNC message is received
-        self._task_reply: asyncio.Task = None
+        self._task_transmit_state: asyncio.Task = None
         self._data_valid = asyncio.Condition()
         self._can_notifier: can.Notifier = None
 
@@ -151,16 +151,29 @@ class BMS_Out():
                 is_extended_id=False,
                 data=b"\x00" * 8
             )
-            self._sync_task = self.bus.send_periodic(sync_msg, conf.SYNC_INTERVAL)
-            assert isinstance(self._sync_task, can.CyclicSendTaskABC)
-        self._task_reply = loop.create_task(self._fn_task_reply())
+            self._task_transmit_sync = self.bus.send_periodic(sync_msg, conf.SYNC_INTERVAL)
+            assert isinstance(self._task_transmit_sync, can.CyclicSendTaskABC)
+        # Normal mode of operation is we push BMS state update to the connected
+        # inverters as soon as it is available (from all connected BMSes),
+        # optionally introducing a delay if conf.SYNC_INTERVAL is set > 0.0
+        #
+        # If conf.SEND_SYNC_ACTIVATED is set, instead of push mode, we wait for
+        # an inverter sync/acqknowledge-telegram (CAN-ID 0x305, data 8x 0x00)
+        # before sending the state update.
+        #
+        # This will also enable a periodic task sending an outgoing sync
+        # telegram periodically to initially and repeatedly trigger the cycle.
+        if conf.SEND_SYNC_ACTIVATED:
+            self._task_transmit_state = loop.create_task(self._fn_task_reply())
+        else:
+            self._task_transmit_state = loop.create_task(self._fn_task_push())
         return self
 
     async def __aexit__(self, _exc_type, _exc_value, _traceback) -> None:
-        if self._sync_task is not None:
-            self._sync_task.stop()
+        if self._task_transmit_sync is not None:
+            self._task_transmit_sync.stop()
         else:
-            self._task_reply.cancel()
+            self._task_transmit_state.cancel()
         self._can_notifier.stop()
         self.bus.shutdown()
 
@@ -170,7 +183,21 @@ class BMS_Out():
             self._output_msgs.clear()
             self._output_msgs.extend(self._bms_encode(state))
             self._data_valid.notify_all()
+    
+    # Normal mode: Push state updates to the connected inverter as soon as available
+    async def _fn_task_push(self) -> None:
+        while True:
+            # Limit push data rate if this is > 0.0 seconds
+            asyncio.sleep(self.config.PUSH_MIN_DELAY)
+            # Send state to inverter once _data_valid is notified by set_state()
+            async with self._data_valid:
+                await self._data_valid.wait()
+                for msg in self._output_msgs:
+                    self.bus.send(msg)
 
+    # If config.SEND_SYNC_ACTIVATED is set, instead of push mode, we wait for
+    # an inverter sync/acqknowledge-telegram (CAN-ID 0x305, data 8x 0x00)
+    # before sending the state update.
     async def _fn_task_reply(self) -> None:
         while True:
             # Read incoming CAN msgs until a SYNC message is received
