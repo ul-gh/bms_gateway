@@ -188,7 +188,7 @@ class BMS_Out():
     async def _fn_task_push(self) -> None:
         while True:
             # Limit push data rate if this is > 0.0 seconds
-            asyncio.sleep(self.config.PUSH_MIN_DELAY)
+            await asyncio.sleep(self.config.PUSH_MIN_DELAY)
             # Send state to inverter once _data_valid is notified by set_state()
             async with self._data_valid:
                 await self._data_valid.wait()
