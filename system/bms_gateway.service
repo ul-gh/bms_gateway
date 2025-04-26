@@ -1,0 +1,21 @@
+# Systemd service file activating bms_gateway application on boot.
+#
+# File location: /etc/systemd/system/bms_gateway.service
+# 
+# Enable systemd service: sudo systemctl enable bms_gateway.service
+#
+[Unit]
+Description=BMS CAN Gateway
+
+[Service]
+Type=simple
+#Requires=
+#After=pigpiod.service
+ExecStart=/home/bgw/venv/bin/bms_gateway
+WorkingDirectory=/home/bgw/.bms_gateway
+# StandardOutput=null
+User=bgw
+
+[Install]
+WantedBy=multi-user.target
+
