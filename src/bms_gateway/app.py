@@ -43,7 +43,7 @@ from contextlib import AsyncExitStack
 from . import app_config
 from .lv_bms import BMS_In, BMS_Out
 from .mqtt_broadcaster import MQTTBroadcaster
-from .bms_multiplexer import BMSMultiplexer
+from .bms_state_combiner import BMSStateCombiner
 
 
 parser = argparse.ArgumentParser(prog=__package__, description=__doc__)
@@ -64,7 +64,7 @@ conf = app_config.init_or_read_from_config_file(init=cmdline.init)
 t_main: threading.Thread = None
 thread_stop = threading.Event()
 
-multiplexer = BMSMultiplexer(conf.battery)
+combiner = BMSStateCombiner(conf.battery)
 
 
 async def main_task() -> None:
@@ -83,7 +83,7 @@ async def main_task() -> None:
             getters = (bms.get_state() for bms in bmses_in)
             states_in = await asyncio.gather(*getters)
             # Calculate total and average values, error flags and corrections
-            state_out = multiplexer.calculate_result_state(states_in)
+            state_out = combiner.calculate_result_state(states_in)
             logger.debug(state_out)
             # Set calculated state on all virtual output BMSes.
             # Individual current scaling values are applied from config file.

@@ -3,8 +3,8 @@ import threading
 from .bms_state import BMSState
 from .app_config import Battery_Config
 
-class BMSMultiplexer():
-    """Multiplex n x BMS states into one (virtual BMS) output state object.
+class BMSStateCombiner():
+    """Combine n x BMS states into one (virtual BMS) output state object.
 
     This does the calculation of the appropriate total values for the system
     like error flags, the summing of all battery current values, applying
@@ -70,42 +70,54 @@ class BMSMultiplexer():
             output state
         """
         self._thread_lock.acquire()
+        # Copy state of the first BMS to get a working copy for result calculation
         state = states_in[0].copy()
-        #state.i_total = sum((state.i_total for state in states_in))
+        # Averaged input values are weighted with each module capacity
+        # and are divided by total system capacity further below
         state.soc *= state.capacity_ah
         state.soh *= state.capacity_ah
+        state.t_avg *= state.capacity_ah
+        state.v_avg *= state.capacity_ah
         for additional in states_in[1:]:
-            # Average values need to be divided by total number of BMSes later
+            # For end-of-charge maximum voltage setpoint, the minimum of all
+            # voltages requested by the input BMSes is calculated
+            state.v_charge_cmd = min(state.v_charge_cmd, additional.v_charge_cmd)
+            # Averaged input values are weighted with each module capacity
+            # and are divided by total system capacity further below.
             state.soc += additional.soc * additional.capacity_ah
             state.soh += additional.soh * additional.capacity_ah
-            state.v_charge_cmd = min(state.v_charge_cmd, additional.v_charge_cmd)
+            state.t_avg += additional.t_avg * additional.capacity_ah
+            state.v_avg += additional.v_avg * additional.capacity_ah
+            # Total capacity, total current and total current limis are the
+            # sum of all limit values reported by the BMSes
+            state.capacity_ah += additional.capacity_ah
+            state.i_total += additional.i_total
+            # Assuming well-tuned current distribution!
             state.i_lim_charge += additional.i_lim_charge
             state.i_lim_discharge += additional.i_lim_discharge
-            # v_avg needs to be divided by total number of BMSes later
-            state.v_avg += additional.v_avg
-            state.i_total += additional.i_total
-            # t_avg needs to be divided by total number of BMSes later
-            state.t_avg += additional.t_avg
+            # Sum for total number of modules and number of errors
+            state.n_modules += additional.n_modules
+            state.n_invalid_data_telegrams += additional.n_invalid_data_telegrams
+            # Error and warning flags are logically OR-ed
             state.error_flags_1 |= additional.error_flags_1
             state.error_flags_2 |= additional.error_flags_2
             state.warning_flags_1 |= additional.warning_flags_1
             state.warning_flags_2 |= additional.warning_flags_2
-            state.n_modules += additional.n_modules
+            # The normal status flags are individually treated
             state.charge_enable = state.charge_enable and additional.charge_enable
             state.discharge_enable = state.discharge_enable and additional.discharge_enable
             state.force_charge_request = state.force_charge_request or additional.force_charge_request
             state.force_charge_request_2 = state.force_charge_request_2 or additional.force_charge_request_2
             state.balancing_charge_request = state.balancing_charge_request or additional.balancing_charge_request
-            state.n_invalid_data_telegrams += additional.n_invalid_data_telegrams
-            state.capacity_ah += additional.capacity_ah
+            # Manufacturer string is kept from the first BMS
+
         # End of for loop
-        # Divide sum of average values by number of averaged values to get total average
+        # Calculate averaged results for total system state
         avg_factor_ah = 1.0 / state.capacity_ah
         state.soc *= avg_factor_ah
         state.soh *= avg_factor_ah
-        avg_factor_n = 1.0 / len(states_in)
-        state.v_avg *= avg_factor_n
-        state.t_avg *= avg_factor_n
+        state.v_avg *= avg_factor_ah
+        state.t_avg *= avg_factor_ah
         # Apply scaling factor and offset to result current
         state.i_total *= self._i_tot_scaling
         state.i_total += self._i_tot_offset

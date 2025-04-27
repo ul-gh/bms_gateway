@@ -105,6 +105,7 @@ class BMS_In():
             state.n_modules = msg[4]
             # CAN ID 0x35C
             msg = frames[0x35C]
+            # The status flags are individually treated
             state.charge_enable = bool(msg[0] & 1<<7)
             state.discharge_enable = bool(msg[0] & 1<<6)
             state.force_charge_request = bool(msg[0] & 1<<5)

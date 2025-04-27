@@ -11,10 +11,10 @@ Description=BMS CAN Gateway
 Type=simple
 #Requires=
 #After=pigpiod.service
-ExecStart=/home/bgw/venv/bin/bms_gateway
-WorkingDirectory=/home/bgw/.bms_gateway
+ExecStart=/home/GW_USERNAME/src/bms_gateway/venv/bin/bms_gateway
+WorkingDirectory=/home/GW_USERNAME/.bms_gateway
 # StandardOutput=null
-User=bgw
+User=GW_USERNAME
 
 [Install]
 WantedBy=multi-user.target
