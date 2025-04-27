@@ -1,0 +1,7 @@
+# /boot/firmware/config.txt
+# Section enabling MCP2515-based CAN-transceiver on Waveshare "RS485 CAN HAT (B)"
+# 1-Ch CAN: MCP2515 + SIT65HVD230DR/SN65HVD23D
+# 2-Ch RS485: SC16IS752 + SP3485
+dtparam=spi=on
+dtoverlay=mcp2515-can0,oscillator=16000000,interrupt=25,,spimaxfrequency=1000000
+dtoverlay=sc16is752-spi1,int_pin=24
