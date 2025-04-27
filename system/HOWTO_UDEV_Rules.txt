@@ -7,7 +7,7 @@ udevadm info -a -p /sys/class/net/can2
 
 # 2) Create UDEV rules for the unique serial numbers:
 SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTRS{serial}=="003700455443571720393538", ATTR{dev_id}=="0x0", ATTR{type}=="280", KERNEL=="can*", NAME="can_in_1"
-SUBSYSTEM=="net", ACTION=="add", DRIVERS=="gs_usb", ATTRS{serial}=="002E002E5443571720393538", ATTR{dev_id}=="0x0", ATTR{type}=="280", KERNEL=="can*", NAME="can_in_2"
+SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTRS{serial}=="002E002E5443571720393538", ATTR{dev_id}=="0x0", ATTR{type}=="280", KERNEL=="can*", NAME="can_in_2"
 SUBSYSTEM=="net", ACTION=="add", DRIVERS=="mcp251x", ATTR{dev_id}=="0x0", ATTR{type}=="280", KERNEL=="can*", NAME="can_out"
 
 # 3) Add UDEV rules to system config by creating a new file at

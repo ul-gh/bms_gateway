@@ -155,7 +155,7 @@ three CAN interfaces, for 2x input BMS and 1x inverter.
 cd ~/src/bms_gateway
 sudo cp system/80-can.network /etc/systemd/network/
 sudo systemctl enable systemd-networkd
-Sudo systemctl start systemd-networkd
+sudo systemctl start systemd-networkd
 # Check if interfaces are up
 systemctl status systemd-networkd
 ip a show
