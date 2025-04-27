@@ -1,10 +1,10 @@
-# Activate can0, can1 and can2 on boot using systemd-networkd
+# Activate can* interfaces on boot using systemd-networkd
 # File location: /etc/systemd/network/80-can.network
 #
 # Enable systemd-networkd: sudo systemctl enable systemd-networkd
 #
 [Match]
-Name=can0 can1 can2
+Name=can*
 
 [CAN]
 BitRate=500K
