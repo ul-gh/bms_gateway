@@ -70,8 +70,8 @@ See BMS state representation in
     - System status flags are individually treated
 
     - Calculation implemented in
-    [BMSMultiplexer::calculate_result_state](
-        src/bms_gateway/bms_multiplexer.py#calculate_result_state)
+    [BMSCombiner::calculate_result_state](
+        src/bms_gateway/bms_state_combiner.py#calculate_result_state)
 
 
 The unified system state is finally distributed to all configured inverters,
@@ -93,9 +93,9 @@ smaller than the total system limits
 * Normal mode of operation is push mode towards all inverters:
 We push a unified BMS state update to the connected inverters as soon as
 it is available (calculated from all connected BMSes), optionally
-introducing a delay if PUSH_MIN_DELAY is set > 0.0 in config.
+introducing a delay if PUSH-MIN-DELAY is set > 0.0 in config.
 
-* If SEND_SYNC_ACTIVATED is set in config, instead of push mode, we wait for an
+* If SEND-SYNC-ACTIVATED is set in config, instead of push mode, we wait for an
 inverter sync/acqknowledge-telegram (CAN-ID 0x305, data 8x 0x00) before sending
 the state update. This will also enable a periodic task sending an outgoing
 sync telegram periodically to initially and repeatedly trigger the cycle.
@@ -165,7 +165,7 @@ Install and enable bms_gateway as a system service:
 
 ```bash
 cd ~/src/bms_gateway
-cat system/bms_gateway.service | sed -e "%s/GW_USERNAME/${USER}" | \
+cat system/bms_gateway.service | sed -e "s/GW_USERNAME/${USER}/" | \
 sudo tee /etc/systemd/system/bms_gateway.service > /dev/null
 systemctl enable bms_gateway
 # Do not start service now as it is not yet configured
@@ -200,13 +200,13 @@ GATEWAY-ACTIVATED = false
 #### in JSON format and pushed periodically on the specified topic.
 
 [mqtt]
-(...)
+#...
 
 
 #### Settings for total values of all parallel connected batteries
 
 [battery]
-(...)
+#...
 
 
 #### List here all configured output BMSes.
@@ -215,11 +215,11 @@ GATEWAY-ACTIVATED = false
 
 # First virtual (emulated) output BMS, connected to one physical inverter
 [[bmses-out]]
-(...)
+#...
 
 # Second inverter and so on...
 [[bmses-out]]
-(...)
+#...
 
 
 #### List here all configured input BMSes (connected to battery modules).
@@ -227,11 +227,11 @@ GATEWAY-ACTIVATED = false
 
 # First input BMS (connected to one battery module BMS)
 [[bmses-in]]
-(...)
+#...
 
 # Second input BMS and so on...
 [[bmses-in]]
-(...)
+#...
 ```
 
 ## Test Run
