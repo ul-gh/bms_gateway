@@ -48,7 +48,7 @@ class Errors:
     temp_high: bool = True
     system_error: bool = True
 
-    def from_flags(self, flags_low: int, flags_high: int):
+    def from_flags(self, flags_low: int, flags_high: int) -> Self:
         self.oc_discharge = bool(flags_low & 1<<7)
         self.temp_low = bool(flags_low & 1<<4)
         self.temp_high = bool(flags_low & 1<<3)
@@ -56,6 +56,7 @@ class Errors:
         self.overvoltage = bool(flags_low & 1<<1)
         self.system_error = bool(flags_high & 1<<3)
         self.oc_charge = bool(flags_high & 1<<0)
+        return self
 
     def to_flags(self) -> tuple[int]:
         flags_low = int(self.oc_discharge) * 1<<7
@@ -82,7 +83,7 @@ class Warnings:
     temp_high: bool = True
     comm_fail: bool = True
 
-    def from_flags(self, flags_low: int, flags_high: int):
+    def from_flags(self, flags_low: int, flags_high: int) -> Self:
         self.oc_discharge = bool(flags_low & 1<<7)
         self.temp_low = bool(flags_low & 1<<4)
         self.temp_high = bool(flags_low & 1<<3)
@@ -90,6 +91,7 @@ class Warnings:
         self.overvoltage = bool(flags_low & 1<<1)
         self.comm_fail = bool(flags_high & 1<<3)
         self.oc_charge = bool(flags_high & 1<<0)
+        return self
 
     def to_flags(self) -> tuple[int]:
         flags_low = int(self.oc_discharge) * 1<<7

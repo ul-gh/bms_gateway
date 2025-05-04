@@ -91,9 +91,9 @@ more than one connected inverter, the sum of all scaling factors should be 1.0.
 smaller than the total system limits
 
 * Normal mode of operation is push mode towards all inverters:
-We push a unified BMS state update to the connected inverters as soon as
-it is available (calculated from all connected BMSes), optionally
-introducing a delay if PUSH-MIN-DELAY is set > 0.0 in config.
+We push the individual state updates to the connected inverters as soon as the
+combined system state it is available (calculated from all connected BMSes),
+optionally introducing a delay if PUSH-MIN-DELAY is set > 0.0 in config.
 
 * If SEND-SYNC-ACTIVATED is set in config, instead of push mode, we wait for an
 inverter sync/acqknowledge-telegram (CAN-ID 0x305, data 8x 0x00) before sending
