@@ -10,6 +10,8 @@ from .bms_state import BMSState
 
 logger = logging.getLogger(__name__)
 
+# Does this test the connection?
+MQTT_TIMEOUT: float = 5.0
 
 class MQTTBroadcaster():
     def __init__(self, config: MQTTConfig):
@@ -17,6 +19,11 @@ class MQTTBroadcaster():
         self._state = BMSState()
         self._task_publish_mqtt: asyncio.Task = None
         self._data_valid = asyncio.Condition()
+        self._client = aiomqtt.Client(config.BROKER,
+                                      config.PORT,
+                                      clean_session=True,
+                                      timeout=MQTT_TIMEOUT,
+                                      )
 
     async def __aenter__(self) -> Self:
         self._task_publish_mqtt = asyncio.create_task(
@@ -36,7 +43,7 @@ class MQTTBroadcaster():
     async def _fn_task_publish_mqtt(self) -> None:
         conf = self.config
         loop = asyncio.get_event_loop()
-        async with aiomqtt.Client(conf.BROKER, conf.PORT) as client:
+        async with self._client as client:
             next_call = loop.time()
             while True:
                 async with self._data_valid:
