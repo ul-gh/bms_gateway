@@ -2,13 +2,15 @@
 
 For BMS using Pylontech Protocol
 """
-from typing import Self
+
 from dataclasses import dataclass, replace
+from typing import Self
 
 
 @dataclass
 class BMSState:
     """BMS state as received on the CAN bus."""
+
     manufacturer: str = ""
     soc: int = 0
     soh: int = 0
@@ -34,12 +36,14 @@ class BMSState:
     capacity_ah: float = 1.0
 
     def copy(self) -> Self:
+        """Return deep copy of this config object."""
         return replace(self)
 
 
 @dataclass
 class Errors:
     """BMS Error flags."""
+
     oc_discharge: bool = True
     oc_charge: bool = True
     overvoltage: bool = True
@@ -49,32 +53,36 @@ class Errors:
     system_error: bool = True
 
     def from_flags(self, flags_low: int, flags_high: int) -> Self:
-        self.oc_discharge = bool(flags_low & 1<<7)
-        self.temp_low = bool(flags_low & 1<<4)
-        self.temp_high = bool(flags_low & 1<<3)
-        self.undervoltage = bool(flags_low & 1<<2)
-        self.overvoltage = bool(flags_low & 1<<1)
-        self.system_error = bool(flags_high & 1<<3)
-        self.oc_charge = bool(flags_high & 1<<0)
+        """Set object attributes from input HW register flags bytes."""
+        self.oc_discharge = bool(flags_low & 1 << 7)
+        self.temp_low = bool(flags_low & 1 << 4)
+        self.temp_high = bool(flags_low & 1 << 3)
+        self.undervoltage = bool(flags_low & 1 << 2)
+        self.overvoltage = bool(flags_low & 1 << 1)
+        self.system_error = bool(flags_high & 1 << 3)
+        self.oc_charge = bool(flags_high & 1 << 0)
         return self
 
     def to_flags(self) -> tuple[int]:
-        flags_low = int(self.oc_discharge) * 1<<7
-        flags_low |= int(self.temp_low) * 1<<4
-        flags_low |= int(self.temp_high) * 1<<3
-        flags_low |= int(self.undervoltage) * 1<<2
-        flags_low |= int(self.overvoltage) * 1<<1
-        flags_high = int(self.system_error) * 1<<3
-        flags_high |= int(self.oc_charge) * 1<<0
+        """Return HW register flag bytes representation of own state."""
+        flags_low = int(self.oc_discharge) * 1 << 7
+        flags_low |= int(self.temp_low) * 1 << 4
+        flags_low |= int(self.temp_high) * 1 << 3
+        flags_low |= int(self.undervoltage) * 1 << 2
+        flags_low |= int(self.overvoltage) * 1 << 1
+        flags_high = int(self.system_error) * 1 << 3
+        flags_high |= int(self.oc_charge) * 1 << 0
         return flags_low, flags_high
-    
+
     def copy(self) -> Self:
+        """Return deep copy of this config object."""
         return replace(self)
 
 
 @dataclass
 class Warnings:
     """BMS Warning flags."""
+
     oc_discharge: bool = True
     oc_charge: bool = True
     overvoltage: bool = True
@@ -84,24 +92,27 @@ class Warnings:
     comm_fail: bool = True
 
     def from_flags(self, flags_low: int, flags_high: int) -> Self:
-        self.oc_discharge = bool(flags_low & 1<<7)
-        self.temp_low = bool(flags_low & 1<<4)
-        self.temp_high = bool(flags_low & 1<<3)
-        self.undervoltage = bool(flags_low & 1<<2)
-        self.overvoltage = bool(flags_low & 1<<1)
-        self.comm_fail = bool(flags_high & 1<<3)
-        self.oc_charge = bool(flags_high & 1<<0)
+        """Set object attributes from input HW register flags bytes."""
+        self.oc_discharge = bool(flags_low & 1 << 7)
+        self.temp_low = bool(flags_low & 1 << 4)
+        self.temp_high = bool(flags_low & 1 << 3)
+        self.undervoltage = bool(flags_low & 1 << 2)
+        self.overvoltage = bool(flags_low & 1 << 1)
+        self.comm_fail = bool(flags_high & 1 << 3)
+        self.oc_charge = bool(flags_high & 1 << 0)
         return self
 
     def to_flags(self) -> tuple[int]:
-        flags_low = int(self.oc_discharge) * 1<<7
-        flags_low |= int(self.temp_low) * 1<<4
-        flags_low |= int(self.temp_high) * 1<<3
-        flags_low |= int(self.undervoltage) * 1<<2
-        flags_low |= int(self.overvoltage) * 1<<1
-        flags_high = int(self.comm_fail) * 1<<3
-        flags_high |= int(self.oc_charge) * 1<<0
+        """Return HW register flag bytes representation of own state."""
+        flags_low = int(self.oc_discharge) * 1 << 7
+        flags_low |= int(self.temp_low) * 1 << 4
+        flags_low |= int(self.temp_high) * 1 << 3
+        flags_low |= int(self.undervoltage) * 1 << 2
+        flags_low |= int(self.overvoltage) * 1 << 1
+        flags_high = int(self.comm_fail) * 1 << 3
+        flags_high |= int(self.oc_charge) * 1 << 0
         return flags_low, flags_high
-    
+
     def copy(self) -> Self:
+        """Return deep copy of this config object."""
         return replace(self)

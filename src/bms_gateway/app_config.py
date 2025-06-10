@@ -1,16 +1,18 @@
-"""BMS gateway configuration
+"""BMS gateway configuration.
 
 Do not edit the configuration values herein, they will be
 overwritten from config file, see file names below!
 
 2025-04-24 Ulrich Lukas
 """
-import sys
+
 import logging
 import shutil
+import sys
+from dataclasses import dataclass
 from importlib.resources import files
 from pathlib import Path
-from dataclasses import dataclass
+
 from dataclass_binder import Binder
 
 logger = logging.getLogger(__name__)
@@ -18,12 +20,15 @@ logger = logging.getLogger(__name__)
 CONFIG_FILE_NAME: str = "bms_config.toml"
 DEFAULT_CONFIG_FILE_NAME: str = "bms_config_default.toml"
 
+
 @dataclass
-class MQTTConfig():
+class MQTTConfig:
     """Settings for MQTT broadcaster.
+
     System state (state of all parallel connected battery BMS) is encoded
     in JSON format and pushed periodically on the specified topic.
     """
+
     # Setting this to false disables transmitting of MQTT telegrams
     ACTIVATED: bool = True
     TOPIC: str = "tele/bms/state"
@@ -34,9 +39,11 @@ class MQTTConfig():
     # MQTT broadcast is also stopped.
     INTERVAL: float = 10.0
 
+
 @dataclass
-class Battery_Config():
-    """Settings for total values of all parallel connected batteries"""
+class BatteryConfig:
+    """Settings for total values of all parallel connected batteries."""
+
     # Maximum charging current limit in Amperes for total battery stack
     I_LIM_CHARGE: float = 700.0
     # Maximum discharging current limit in Amperes for total battery stack
@@ -47,9 +54,11 @@ class Battery_Config():
     # Apply this static offset in Amperes to the total battery stack current
     I_TOT_OFFSET: float = 0.0
 
+
 @dataclass
-class BMS_Out_Config():
-    """Settings for emulated (output) BMS"""
+class BMSOutConfig:
+    """Settings for emulated (output) BMS."""
+
     # Dedicated CAN interface for this BMS (connected to a single battery inverter)
     CAN_IF: str = "vcan0"
     # Text description for the emulated BMS
@@ -80,9 +89,11 @@ class BMS_Out_Config():
     # Cycle time in seconds for transmitting the CAN inverter sync-telegram
     SYNC_INTERVAL: float = 5.0
 
+
 @dataclass
-class BMS_In_Config():
-    """Settings for input BMS"""
+class BMSInConfig:
+    """Settings for input BMS."""
+
     # Dedicated CAN interface for this BMS (connected to one battery module)
     CAN_IF: str = "vcan1"
     # Text description for battery module BMS
@@ -96,35 +107,34 @@ class BMS_In_Config():
 
 
 @dataclass
-class AppConfig():
-    """All application settings"""
+class AppConfig:
+    """All application settings."""
+
     GATEWAY_ACTIVATED: bool
     mqtt: MQTTConfig
-    battery: Battery_Config
-    bmses_in: list[BMS_In_Config]
-    bmses_out: list[BMS_Out_Config]
+    battery: BatteryConfig
+    bmses_in: list[BMSInConfig]
+    bmses_out: list[BMSOutConfig]
 
 
-def init_or_read_from_config_file(init=False) -> AppConfig:
+def init_or_read_from_config_file(*, init: bool = False) -> AppConfig:
+    """Read or initialize configuration file and return config data object."""
     conf_file = Path.home().joinpath(f".{__package__}").joinpath(CONFIG_FILE_NAME)
     default_conf_file = files(__package__).joinpath(DEFAULT_CONFIG_FILE_NAME)
     if init or not conf_file.is_file():
         conf_file.parent.mkdir(exist_ok=True)
         shutil.copy(default_conf_file, conf_file)
-        logger.log(
-            level=logging.INFO if init else logging.ERROR,
-            msg=f"Configuration initialized using file: {conf_file}\n"
-            "==> Please edit this file NOW to configure CAN hardware "
-            "etc. and run the application again!",
-        )
+        msg = "Configuration initialized using file: %s\n==> Please check or edit this file NOW!"
+        logger.log(logging.INFO if init else logging.ERROR, msg, conf_file)
         sys.exit(0 if init else 1)
     try:
         conf = Binder(AppConfig).parse_toml(conf_file)
         if not conf.GATEWAY_ACTIVATED:
-            logger.error(f"BMS Gateway not configured! "
-                         f"Edit config file first: {conf_file}")
+            msg = "BMS Gateway not configured!  Edit config file first: %s"
+            logger.error(msg, conf_file)
             sys.exit(1)
-    except Exception as e:
-        logger.exception(f"Error reading configuration file {conf_file}")
+    except Exception:
+        msg = "Error reading configuration file %s"
+        logger.exception(msg, conf_file)
         sys.exit(1)
     return conf

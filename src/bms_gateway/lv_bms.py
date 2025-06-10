@@ -1,10 +1,13 @@
-import time
+"""Async implementation of state and API for LV BMS using Pylontech protocol."""
+
 import asyncio
 import logging
-import can
+import time
 from typing import Self
 
-from .app_config import BMS_In_Config, BMS_Out_Config
+import can
+
+from .app_config import BMSInConfig, BMSOutConfig
 from .bms_state import BMSState
 
 logger = logging.getLogger(__name__)
@@ -19,8 +22,11 @@ ID_BMS_TELEGRAM_START: int = 0x359
 ID_INVERTER_REQUEST: int = 0x305
 
 
-class BMS_In():
-    def __init__(self, config: BMS_In_Config):
+class BMSIn:
+    """Representation of input-side battery BMS state."""
+
+    def __init__(self, config: BMSInConfig) -> None:
+        """Initialize an input (battery-side) BMS representation object."""
         self.config = config
         self.bus: can.Bus = None
         self._reader: can.AsyncBufferedReader = None
@@ -33,6 +39,7 @@ class BMS_In():
         self._task_main: asyncio.Task = None
 
     async def __aenter__(self) -> Self:
+        """Async context manager entry method."""
         conf = self.config
         loop = asyncio.get_event_loop()
         self.bus = can.Bus(conf.CAN_IF, "socketcan", bitrate=BMS_IN_BITRATE)
@@ -44,7 +51,8 @@ class BMS_In():
         self._task_main = loop.create_task(self._fn_task_main())
         return self
 
-    async def __aexit__(self, _exc_type, _exc_value, _traceback) -> None:
+    async def __aexit__(self, *_: object) -> None:
+        """Async context manager exit method."""
         logger.debug("__aexit__ called")
         if self._poll_task is not None:
             self._poll_task.stop()
@@ -53,6 +61,7 @@ class BMS_In():
         self.bus.shutdown()
 
     async def get_state(self) -> BMSState:
+        """Return internal state representation."""
         logger.debug("BMS_In:get_state() called")
         async with self._data_ready:
             await self._data_ready.wait()
@@ -106,29 +115,32 @@ class BMS_In():
             # CAN ID 0x35C
             msg = frames[0x35C]
             # The status flags are individually treated
-            state.charge_enable = bool(msg[0] & 1<<7)
-            state.discharge_enable = bool(msg[0] & 1<<6)
-            state.force_charge_request = bool(msg[0] & 1<<5)
-            state.force_charge_request_2 = bool(msg[0] & 1<<4)
-            state.balancing_charge_request = bool(msg[0] & 1<<3)
+            state.charge_enable = bool(msg[0] & 1 << 7)
+            state.discharge_enable = bool(msg[0] & 1 << 6)
+            state.force_charge_request = bool(msg[0] & 1 << 5)
+            state.force_charge_request_2 = bool(msg[0] & 1 << 4)
+            state.balancing_charge_request = bool(msg[0] & 1 << 3)
             # CAN ID 0x35E
             msg = frames[0x35E]
             state.manufacturer = msg.decode().rstrip("\x00")
         # Operator "<=" tests if left set is a subset of the set on the right side
-        #if not {0x351, 0x355, 0x356, 0x359, 0x35C, 0x35E} <= frames.keys():
+        # if not {0x351, 0x355, 0x356, 0x359, 0x35C, 0x35E} <= frames.keys():
         except KeyError as e:
             txt = f"Incomplete set of data frames received. ID: {hex(e.args[0])}"
             state.n_invalid_data_telegrams += 1
-            raise ValueError(txt)
+            raise ValueError(txt) from e
         except (IndexError, ValueError, UnicodeDecodeError) as e:
             txt = f"Invalid data received. Details: {e.args[0]}"
             state.n_invalid_data_telegrams += 1
-            raise ValueError(txt)
+            raise ValueError(txt) from e
         state.timestamp_last_bms_update = time.time()
 
 
-class BMS_Out():
-    def __init__(self, config: BMS_Out_Config):
+class BMSOut:
+    """Emulation of one output-side (connected to iverter) BMS."""
+
+    def __init__(self, config: BMSOutConfig) -> None:
+        """Initialize an output-side (emulated battery) BMS object."""
         self.config = config
         self.bus: can.Bus = None
         self._reader: can.AsyncBufferedReader = None
@@ -141,6 +153,7 @@ class BMS_Out():
         self._can_notifier: can.Notifier = None
 
     async def __aenter__(self) -> Self:
+        """Async context manager entry method."""
         conf = self.config
         loop = asyncio.get_event_loop()
         self.bus = can.Bus(conf.CAN_IF, "socketcan", bitrate=BMS_IN_BITRATE)
@@ -150,10 +163,10 @@ class BMS_Out():
             sync_msg = can.Message(
                 arbitration_id=ID_INVERTER_REQUEST,
                 is_extended_id=False,
-                data=b"\x00" * 8
+                data=b"\x00" * 8,
             )
             self._task_transmit_sync = self.bus.send_periodic(sync_msg, conf.SYNC_INTERVAL)
-            assert isinstance(self._task_transmit_sync, can.CyclicSendTaskABC)
+            assert isinstance(self._task_transmit_sync, can.CyclicSendTaskABC)  # noqa: S101
         # Normal mode of operation is we push BMS state update to the connected
         # inverters as soon as it is available (from all connected BMSes),
         # optionally introducing a delay if conf.PUSH_MIN_DELAY is set > 0.0
@@ -170,7 +183,8 @@ class BMS_Out():
             self._task_transmit_state = loop.create_task(self._fn_task_push())
         return self
 
-    async def __aexit__(self, _exc_type, _exc_value, _traceback) -> None:
+    async def __aexit__(self, *_: object) -> None:
+        """Async context manager exit method."""
         if self._task_transmit_sync is not None:
             self._task_transmit_sync.stop()
         else:
@@ -179,12 +193,13 @@ class BMS_Out():
         self.bus.shutdown()
 
     async def set_state(self, state: BMSState) -> None:
+        """Set state of emulated output-side (connected to iverter) BMS."""
         logger.debug("BMS_Out:set_state() called")
         async with self._data_valid:
             self._output_msgs.clear()
             self._output_msgs.extend(self._bms_encode(state))
             self._data_valid.notify_all()
-    
+
     # Normal mode: Push state updates to the connected inverter as soon as available
     async def _fn_task_push(self) -> None:
         while True:
@@ -226,38 +241,37 @@ class BMS_Out():
             + int(10 * i_lim_charge).to_bytes(2, "little", signed=True)
             + int(10 * i_lim_discharge).to_bytes(2, "little", signed=True)
         )
-        msg_355 = (
-            int(state.soc).to_bytes(2, "little")
-            + int(state.soh).to_bytes(2, "little")
-        )
+        msg_355 = int(state.soc).to_bytes(2, "little") + int(state.soh).to_bytes(2, "little")
         msg_356 = (
             int(100 * state.v_avg).to_bytes(2, "little", signed=True)
             + int(10 * i_total).to_bytes(2, "little", signed=True)
             + int(10 * state.t_avg).to_bytes(2, "little", signed=True)
         )
-        msg_359 = bytes((
-            state.error_flags_1,
-            state.error_flags_2,
-            state.warning_flags_1,
-            state.warning_flags_2,
-            state.n_modules,
-            # Following two bytes are fixed values according to Pylontech spec
-            0x50,
-            0x4E,
-        ))
-        msg_35C = (
+        msg_359 = bytes(
+            (
+                state.error_flags_1,
+                state.error_flags_2,
+                state.warning_flags_1,
+                state.warning_flags_2,
+                state.n_modules,
+                # Following two bytes are fixed values according to Pylontech spec
+                0x50,
+                0x4E,
+            ),
+        )
+        msg_35c = (
             state.charge_enable << 7
             | state.discharge_enable << 6
             | state.force_charge_request << 5
             | state.force_charge_request_2 << 4
             | state.balancing_charge_request << 3
         ).to_bytes()
-        msg_35E = state.manufacturer.encode("ascii") + b"\x00"
+        msg_35e = state.manufacturer.encode("ascii") + b"\x00"
         return [
             can.Message(arbitration_id=0x351, is_extended_id=False, data=msg_351),
             can.Message(arbitration_id=0x355, is_extended_id=False, data=msg_355),
             can.Message(arbitration_id=0x356, is_extended_id=False, data=msg_356),
             can.Message(arbitration_id=0x359, is_extended_id=False, data=msg_359),
-            can.Message(arbitration_id=0x35C, is_extended_id=False, data=msg_35C),
-            can.Message(arbitration_id=0x35E, is_extended_id=False, data=msg_35E),
+            can.Message(arbitration_id=0x35C, is_extended_id=False, data=msg_35c),
+            can.Message(arbitration_id=0x35E, is_extended_id=False, data=msg_35e),
         ]

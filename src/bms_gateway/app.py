@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Multiplexing n x m CAN-to-CAN and simultaneous CAN-to-MQTT Gateway
-for LV (48V) Battery Management Systems using Pylontech Protocol.
+"""Multiplexing n x m CAN-to-CAN and simultaneous CAN-to-MQTT Gateway.
+
+BMS gateway for LV (48V) Battery Management Systems using Pylontech Protocol.
 
 Pylontech protocol, while imitating the SMA Sunny Island CAN-Bus BMS protocol,
 has found widespread adoption for Low-Voltage (LV) Li-Ion
@@ -34,6 +35,7 @@ This file must be edited to suit application details.
 
 2025-04-24 Ulrich Lukas
 """
+
 import argparse
 import asyncio
 import logging
@@ -41,16 +43,13 @@ import threading
 from contextlib import AsyncExitStack
 
 from . import app_config
-from .lv_bms import BMS_In, BMS_Out
-from .mqtt_broadcaster import MQTTBroadcaster
 from .bms_state_combiner import BMSStateCombiner
-
+from .lv_bms import BMSIn, BMSOut
+from .mqtt_broadcaster import MQTTBroadcaster
 
 parser = argparse.ArgumentParser(prog=__package__, description=__doc__)
-parser.add_argument("--init", action="store_true",
-                    help="Initialize configuration file and exit")
-parser.add_argument("-v", "--verbose", action="store_true",
-                    help="Enable verbose (debug) output")
+parser.add_argument("--init", action="store_true", help="Initialize configuration file and exit")
+parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose (debug) output")
 cmdline = parser.parse_args()
 
 logger = logging.getLogger(__name__)
@@ -68,15 +67,16 @@ combiner = BMSStateCombiner(conf.battery)
 
 
 async def main_task() -> None:
+    """Receives BMS input data, combines and broadcasts to all inverters."""
     async with AsyncExitStack() as stack:
-        bmses_in = [BMS_In(bms_conf) for bms_conf in conf.bmses_in]
+        bmses_in = [BMSIn(bms_conf) for bms_conf in conf.bmses_in]
         for bms in bmses_in:
             await stack.enter_async_context(bms)
-        bmses_out = [BMS_Out(bms_conf) for bms_conf in conf.bmses_out]
+        bmses_out = [BMSOut(bms_conf) for bms_conf in conf.bmses_out]
         for bms in bmses_out:
             await stack.enter_async_context(bms)
         if conf.mqtt.ACTIVATED:
-            mqtt_out = MQTTBroadcaster(conf.mqtt)  
+            mqtt_out = MQTTBroadcaster(conf.mqtt)
             await stack.enter_async_context(mqtt_out)
         while not thread_stop.isSet():
             # Read all input BMSes
@@ -94,19 +94,23 @@ async def main_task() -> None:
 
 
 def run_app() -> None:
-    try:
+    """Run app in foreground (also as a system service)."""
+    try:  # noqa: SIM105
         asyncio.run(main_task())
     except KeyboardInterrupt:
         pass
 
+
 def run_app_bg() -> None:
-    """Run app in background thread (for debugging in ipython etc)"""
-    global t_main
+    """Run app in background thread (for debugging in ipython etc)."""
+    global t_main  # noqa: PLW0603
     thread_stop.clear()
     t_main = threading.Thread(target=run_app)
     t_main.start()
 
+
 def stop_app() -> None:
+    """Stop app running in background thread."""
     thread_stop.set()
 
 

@@ -1,9 +1,12 @@
+"""Combine n x BMS states into one (virtual BMS) output state object."""
+
 import threading
 
+from .app_config import BatteryConfig
 from .bms_state import BMSState
-from .app_config import Battery_Config
 
-class BMSStateCombiner():
+
+class BMSStateCombiner:
     """Combine n x BMS states into one (virtual BMS) output state object.
 
     This does the calculation of the appropriate total values for the system
@@ -13,7 +16,9 @@ class BMSStateCombiner():
     For further (yet unimplemented) control in multithreaded environment,
     the scaling and limiting values can be set using thread-safe setter methods.
     """
-    def __init__(self, battery_conf: Battery_Config):
+
+    def __init__(self, battery_conf: BatteryConfig) -> None:
+        """Initialize BMSStateCombiner with emulated (virtual) battery config."""
         self._i_lim_charge = battery_conf.I_LIM_CHARGE
         self._i_lim_discharge = battery_conf.I_LIM_DISCHARGE
         self._i_tot_scaling = battery_conf.I_TOT_SCALING
@@ -21,45 +26,51 @@ class BMSStateCombiner():
         self._thread_lock = threading.Lock()
 
     def set_i_tot_scaling(self, i_tot_scaling: float) -> None:
-        """Set total current scaling factor (correction factor)
-        
-        Args:        
+        """Set total current scaling factor (correction factor).
+
+        Args:
             i_tot_scaling:  total current scaling factor
                             (default value is 1.0)
+
         """
         with self._thread_lock:
             self._i_tot_scaling = i_tot_scaling
 
     def set_tot_offset(self, i_tot_offset: float) -> None:
-        """Set total current offset (correction value)
-        
-        Args:        
+        """Set total current offset (correction value).
+
+        Args:
             i_tot_offset:   total current offset in amperes
                             (default value is 0.0)
+
         """
         with self._thread_lock:
             self._i_tot_offset = i_tot_offset
 
     def set_i_lim_charge(self, i_lim_charge: float) -> None:
-        """Set total current limit for charging
-        
-        Args:        
+        """Set total current limit for charging.
+
+        Args:
             i_lim_charge:   charging current limit setpoint in amperes
+
         """
         with self._thread_lock:
             self._i_lim_charge = i_lim_charge
 
     def set_i_lim_discharge(self, i_lim_discharge: float) -> None:
-        """Set total current limit for discharging
-        
-        Args:        
+        """Set total current limit for discharging.
+
+        Args:
             i_lim_discharge:    discharging current limit setpoint in amperes
+
         """
         with self._thread_lock:
             self._i_lim_discharge = i_lim_discharge
 
     def calculate_result_state(self, states_in: tuple[BMSState]) -> BMSState:
-        """This does the calculation of the appropriate total values
+        """Calculate totalized output state.
+
+        This does the calculation of the appropriate total values
         for the system like error flags, the summing of all battery
         current values, applying offset or correction factors and
         applying setpoint limits.
@@ -68,6 +79,7 @@ class BMSStateCombiner():
             states_in:  input states
         Returns:
             output state
+
         """
         self._thread_lock.acquire()
         # Copy state of the first BMS to get a working copy for result calculation

@@ -1,12 +1,7 @@
 [project]
 name = "bms_gateway"
 version = "0.0.2"
-dependencies = [
-    "python-can",
-    "paho-mqtt",
-    "aiomqtt",
-    "dataclass-binder",
-]
+dependencies = ["python-can", "paho-mqtt", "aiomqtt", "dataclass-binder"]
 
 [build-system]
 requires = ["setuptools"]
