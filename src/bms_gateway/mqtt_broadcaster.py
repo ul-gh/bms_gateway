@@ -24,7 +24,7 @@ class MQTTBroadcaster:
         """Init MQTTBroadcaster with config."""
         self.config = config
         self._state = BMSState()
-        self._task_publish_mqtt: asyncio.Task = None
+        self._task_publish_mqtt: asyncio.Task[None]
         self._data_valid = asyncio.Condition()
         self._client = aiomqtt.Client(
             config.BROKER,

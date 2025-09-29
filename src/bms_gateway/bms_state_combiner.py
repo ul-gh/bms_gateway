@@ -67,7 +67,7 @@ class BMSStateCombiner:
         with self._thread_lock:
             self._i_lim_discharge = i_lim_discharge
 
-    def calculate_result_state(self, states_in: tuple[BMSState]) -> BMSState:
+    def calculate_result_state(self, states_in: list[BMSState]) -> BMSState:
         """Calculate totalized output state.
 
         This does the calculation of the appropriate total values
@@ -86,20 +86,20 @@ class BMSStateCombiner:
         state = states_in[0].copy()
         # Averaged input values are weighted with each module capacity
         # and are divided by total system capacity further below
-        state.soc *= state.capacity_ah
-        state.soh *= state.capacity_ah
-        state.t_avg *= state.capacity_ah
-        state.v_avg *= state.capacity_ah
+        soc_avg = state.soc * state.capacity_ah
+        soh_avg = state.soh * state.capacity_ah
+        t_avg = state.t_avg * state.capacity_ah
+        v_avg = state.v_avg * state.capacity_ah
         for additional in states_in[1:]:
             # For end-of-charge maximum voltage setpoint, the minimum of all
             # voltages requested by the input BMSes is calculated
             state.v_charge_cmd = min(state.v_charge_cmd, additional.v_charge_cmd)
             # Averaged input values are weighted with each module capacity
             # and are divided by total system capacity further below.
-            state.soc += additional.soc * additional.capacity_ah
-            state.soh += additional.soh * additional.capacity_ah
-            state.t_avg += additional.t_avg * additional.capacity_ah
-            state.v_avg += additional.v_avg * additional.capacity_ah
+            soc_avg += additional.soc * additional.capacity_ah
+            soh_avg += additional.soh * additional.capacity_ah
+            t_avg += additional.t_avg * additional.capacity_ah
+            v_avg += additional.v_avg * additional.capacity_ah
             # Total capacity, total current and total current limis are the
             # sum of all limit values reported by the BMSes
             state.capacity_ah += additional.capacity_ah
@@ -126,10 +126,10 @@ class BMSStateCombiner:
         # End of for loop
         # Calculate averaged results for total system state
         avg_factor_ah = 1.0 / state.capacity_ah
-        state.soc *= avg_factor_ah
-        state.soh *= avg_factor_ah
-        state.v_avg *= avg_factor_ah
-        state.t_avg *= avg_factor_ah
+        state.soc = soc_avg * avg_factor_ah
+        state.soh = soh_avg * avg_factor_ah
+        state.v_avg = v_avg * avg_factor_ah
+        state.t_avg = t_avg * avg_factor_ah
         # Apply scaling factor and offset to result current
         state.i_total *= self._i_tot_scaling
         state.i_total += self._i_tot_offset

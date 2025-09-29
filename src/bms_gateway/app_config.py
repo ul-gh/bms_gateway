@@ -103,7 +103,7 @@ class BMSInConfig:
     CAPACITY_AH: float = 1400
     # If set, using this time interval in seconds, poll the BMS by
     # periodically sending an inverter sync/ackknowledge telegram.
-    POLL_INTERVAL: float = None
+    POLL_INTERVAL: float | None = None
 
 
 @dataclass
@@ -123,7 +123,7 @@ def init_or_read_from_config_file(*, init: bool = False) -> AppConfig:
     default_conf_file = files(__package__).joinpath(DEFAULT_CONFIG_FILE_NAME)
     if init or not conf_file.is_file():
         conf_file.parent.mkdir(exist_ok=True)
-        shutil.copy(default_conf_file, conf_file)
+        shutil.copy(default_conf_file, conf_file) # type: ignore
         msg = "Configuration initialized using file: %s\n==> Please check or edit this file NOW!"
         logger.log(logging.INFO if init else logging.ERROR, msg, conf_file)
         sys.exit(0 if init else 1)

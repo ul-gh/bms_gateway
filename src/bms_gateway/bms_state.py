@@ -12,8 +12,8 @@ class BMSState:
     """BMS state as received on the CAN bus."""
 
     manufacturer: str = ""
-    soc: int = 0
-    soh: int = 0
+    soc: float = 0.0
+    soh: float = 0.0
     v_charge_cmd: float = 0.0
     i_lim_charge: float = 0.0
     i_lim_discharge: float = 0.0
@@ -63,7 +63,7 @@ class Errors:
         self.oc_charge = bool(flags_high & 1 << 0)
         return self
 
-    def to_flags(self) -> tuple[int]:
+    def to_flags(self) -> tuple[int, int]:
         """Return HW register flag bytes representation of own state."""
         flags_low = int(self.oc_discharge) * 1 << 7
         flags_low |= int(self.temp_low) * 1 << 4
@@ -102,7 +102,7 @@ class Warnings:
         self.oc_charge = bool(flags_high & 1 << 0)
         return self
 
-    def to_flags(self) -> tuple[int]:
+    def to_flags(self) -> tuple[int, int]:
         """Return HW register flag bytes representation of own state."""
         flags_low = int(self.oc_discharge) * 1 << 7
         flags_low |= int(self.temp_low) * 1 << 4

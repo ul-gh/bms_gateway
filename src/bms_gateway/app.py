@@ -60,7 +60,7 @@ logging.basicConfig(level=logging.DEBUG if cmdline.verbose else logging.INFO)
 # Default configuration: See source tree file "bms_config_default.toml"
 conf = app_config.init_or_read_from_config_file(init=cmdline.init)
 
-t_main: threading.Thread = None
+t_main: threading.Thread | None = None
 thread_stop = threading.Event()
 
 combiner = BMSStateCombiner(conf.battery)
@@ -68,6 +68,7 @@ combiner = BMSStateCombiner(conf.battery)
 
 async def main_task() -> None:
     """Receives BMS input data, combines and broadcasts to all inverters."""
+    mqtt_out: MQTTBroadcaster | None = None
     async with AsyncExitStack() as stack:
         bmses_in = [BMSIn(bms_conf) for bms_conf in conf.bmses_in]
         for bms in bmses_in:
@@ -78,7 +79,7 @@ async def main_task() -> None:
         if conf.mqtt.ACTIVATED:
             mqtt_out = MQTTBroadcaster(conf.mqtt)
             await stack.enter_async_context(mqtt_out)
-        while not thread_stop.isSet():
+        while not thread_stop.is_set():
             # Read all input BMSes
             getters = (bms.get_state() for bms in bmses_in)
             states_in = await asyncio.gather(*getters)
@@ -89,7 +90,7 @@ async def main_task() -> None:
             # Individual current scaling values are applied from config file.
             setters = (bms.set_state(state_out) for bms in bmses_out)
             await asyncio.gather(*setters)
-            if conf.mqtt.ACTIVATED:
+            if mqtt_out is not None:
                 await mqtt_out.set_state(state_out)
 
 
