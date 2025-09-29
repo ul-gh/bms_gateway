@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Subscribe to MQTT state broadcasting topic and dump on screen"""
 import asyncio
+from typing import cast
 import aiomqtt
 import json
 from pprint import pformat
@@ -17,7 +18,7 @@ conf = app_config.init_or_read_from_config_file()
 screen = TextScreen()
 
 async def print_msg(msg: aiomqtt.Message) -> None:
-    msg_dict = json.loads(msg.payload)
+    msg_dict = json.loads(cast(bytes, msg.payload))
     state = BMSState(**msg_dict)
     errors = Errors().from_flags(state.error_flags_1, state.error_flags_2)
     warnings = Warnings().from_flags(state.warning_flags_1, state.warning_flags_2)
