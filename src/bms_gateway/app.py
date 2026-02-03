@@ -39,29 +39,40 @@ This file must be edited to suit application details.
 import argparse
 import asyncio
 import logging
+import sys
 import threading
 from contextlib import AsyncExitStack
 
-from . import app_config
-from .bms_state_combiner import BMSStateCombiner
-from .lv_bms import BMSIn, BMSOut
-from .mqtt_broadcaster import MQTTBroadcaster
+from bms_gateway import app_config
+from bms_gateway.bms_state import BMSState
+from bms_gateway.bms_state_combiner import BMSStateCombiner
+from bms_gateway.lv_bms import BMSIn, BMSOut
+from bms_gateway.mqtt_broadcaster import MQTTBroadcaster
 
 parser = argparse.ArgumentParser(prog=__package__, description=__doc__)
-parser.add_argument("--init", action="store_true", help="Initialize configuration file and exit")
-parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose (debug) output")
+_ = parser.add_argument("-v", "--verbose", action="store_true", help="Set loglevel to DEBUG")
+_ = parser.add_argument("-q", "--quiet", action="store_true", help="Set loglevel to WARNING")
+_ = parser.add_argument("-d", "--daemon", action="store_true", help="Run in background thread.")
 cmdline = parser.parse_args()
 
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG if cmdline.verbose else logging.INFO)
+
+if cmdline.verbose:  # pyright: ignore[reportAny]
+    logging.basicConfig(level=logging.DEBUG)
+elif cmdline.quiet:  # pyright: ignore[reportAny]
+    logging.basicConfig(level=logging.WARNING)
+else:
+    logging.basicConfig(level=logging.INFO)
+
+logger = logging.getLogger("bms_gateway.app")
 
 
 # App configuration read from file: "~/bms_gateway/bms_config.toml"
 # Default configuration: See source tree file "bms_config_default.toml"
-conf = app_config.init_or_read_from_config_file(init=cmdline.init)
+conf = app_config.init_or_read_from_config_file(init=cmdline.init)  # pyright: ignore[reportAny]
 
-t_main: threading.Thread = None
-thread_stop = threading.Event()
+
+t_main: threading.Thread | None = None
+app_running = threading.Event()
 
 combiner = BMSStateCombiner(conf.battery)
 
@@ -69,50 +80,66 @@ combiner = BMSStateCombiner(conf.battery)
 async def main_task() -> None:
     """Receives BMS input data, combines and broadcasts to all inverters."""
     async with AsyncExitStack() as stack:
-        bmses_in = [BMSIn(bms_conf) for bms_conf in conf.bmses_in]
-        for bms in bmses_in:
-            await stack.enter_async_context(bms)
-        bmses_out = [BMSOut(bms_conf) for bms_conf in conf.bmses_out]
-        for bms in bmses_out:
-            await stack.enter_async_context(bms)
+        bmses_in: list[BMSIn] = [BMSIn(conf) for conf in conf.bmses_in]
+        bmses_out: list[BMSOut] = [BMSOut(conf) for conf in conf.bmses_out]
+        for bms in bmses_in + bmses_out:
+            _ = await stack.enter_async_context(bms)
         if conf.mqtt.ACTIVATED:
-            mqtt_out = MQTTBroadcaster(conf.mqtt)
-            await stack.enter_async_context(mqtt_out)
-        while not thread_stop.isSet():
+            mqtt_client: MQTTBroadcaster = MQTTBroadcaster(conf.mqtt)
+            _ = await stack.enter_async_context(mqtt_client)
+        while app_running.is_set():
             # Read all input BMSes
-            getters = (bms.get_state() for bms in bmses_in)
-            states_in = await asyncio.gather(*getters)
+            states_in: list[BMSState] = await asyncio.gather(*(bms.get_state() for bms in bmses_in))
             # Calculate total and average values, error flags and corrections
-            state_out = combiner.calculate_result_state(states_in)
+            state_out: BMSState = combiner.combine_bms_states(states_in)
             logger.debug(state_out)
             # Set calculated state on all virtual output BMSes.
             # Individual current scaling values are applied from config file.
-            setters = (bms.set_state(state_out) for bms in bmses_out)
-            await asyncio.gather(*setters)
+            _ = await asyncio.gather(*(bms.set_state(state_out) for bms in bmses_out))
             if conf.mqtt.ACTIVATED:
-                await mqtt_out.set_state(state_out)
+                await mqtt_client.set_state(state_out)  # pyright: ignore[reportPossiblyUnboundVariable]
 
 
 def run_app() -> None:
     """Run app in foreground (also as a system service)."""
-    try:  # noqa: SIM105
-        asyncio.run(main_task())
+    asyncio.run(main_task())
+
+
+def start() -> None:
+    """Run app in new background thread."""
+    global main_thread
+    app_running.set()
+    main_thread = threading.Thread(target=run_app, name="bms_gateway", daemon=False)
+    main_thread.start()
+    logger.info("App running in thread: %s", main_thread)
+
+def stop() -> None:
+    """Stop energy_modulator app."""
+    logger.info("stop() called..")
+    app_running.clear()
+    main_thread.join()
+
+
+def main() -> None:
+    """Run Energy Modulator Server."""
+    try:
+        if cmdline.daemon:  # pyright: ignore[reportAny]
+            logger.info("Starting Energy Modulator Server in background thread.")
+            start()
+        else:
+            logger.info("Starting Energy Modulator Server")
+            run_app()
     except KeyboardInterrupt:
-        pass
-
-
-def run_app_bg() -> None:
-    """Run app in background thread (for debugging in ipython etc)."""
-    global t_main  # noqa: PLW0603
-    thread_stop.clear()
-    t_main = threading.Thread(target=run_app)
-    t_main.start()
-
-
-def stop_app() -> None:
-    """Stop app running in background thread."""
-    thread_stop.set()
+        # Suppress sys.exit() when running interactively.
+        stop()
+        if "get_ipython" not in locals():
+            sys.exit(0)
+    except Exception:
+        # Main task should never terminate.
+        logger.exception("Exception in main()!")
+        stop()
+        sys.exit(1)
 
 
 if __name__ == "__main__":
-    run_app()
+    main()

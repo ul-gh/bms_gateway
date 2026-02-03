@@ -4,7 +4,8 @@ import asyncio
 import dataclasses
 import json
 import logging
-from typing import Self
+from types import TracebackType
+from typing import Self, final
 
 import aiomqtt
 
@@ -16,7 +17,7 @@ logger = logging.getLogger(__name__)
 # Does this test the connection?
 MQTT_TIMEOUT: float = 5.0
 
-
+@final
 class MQTTBroadcaster:
     """MQTT telemetry broadcaster for bms_gateway."""
 
@@ -24,7 +25,7 @@ class MQTTBroadcaster:
         """Init MQTTBroadcaster with config."""
         self.config = config
         self._state = BMSState()
-        self._task_publish_mqtt: asyncio.Task = None
+        self._task_publish_mqtt: asyncio.Task[None] | None = None
         self._data_valid = asyncio.Condition()
         self._client = aiomqtt.Client(
             config.BROKER,
@@ -40,9 +41,15 @@ class MQTTBroadcaster:
         )
         return self
 
-    async def __aexit__(self, *_: object) -> None:
+    async def __aexit__(
+        self,
+        _exc_type: type[BaseException] | None,
+        _exc_val: BaseException | None,
+        _exc_tb: TracebackType | None,
+    ) -> None:
         """Async context manager exit method."""
-        self._task_publish_mqtt.cancel()
+        if self._task_publish_mqtt is not None:
+            _ = self._task_publish_mqtt.cancel()
 
     async def set_state(self, state: BMSState) -> None:
         """Set state to be broadcasted over MQTT."""
@@ -58,7 +65,7 @@ class MQTTBroadcaster:
             next_call = loop.time()
             while True:
                 async with self._data_valid:
-                    await self._data_valid.wait()
+                    _ = await self._data_valid.wait()
                     msg_json = json.dumps(dataclasses.asdict(self._state))
                 await client.publish(conf.TOPIC, msg_json)
                 next_call += conf.INTERVAL

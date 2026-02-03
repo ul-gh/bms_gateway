@@ -1,20 +1,66 @@
 [project]
 name = "bms_gateway"
-version = "0.0.2"
+description = "Multiplexing n x m Battery BMS to Inverter Gateway"
+readme = "README.md"
+authors = [
+    { "name" = "Ulrich Lukas", "email" = "opensource@lukas-elektronik.de" },
+]
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
+dynamic = ["version"]
 dependencies = ["python-can", "paho-mqtt", "aiomqtt", "dataclass-binder"]
-
-[build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
+requires-python = ">=3.13"
 
 [project.scripts]
 bms_gateway = "bms_gateway.app:run_app"
 
+[project.urls]
+Homepage = "https://github.com/ul-gh/bms_gateway"
+Repository = "https://github.com/ul-gh/bms_gateway.git"
+
+[build-system]
+requires = ["setuptools", "setuptools-git-versioning", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["include"]
+namespaces = false
+
 [tool.setuptools.package-data]
-bms_gateway = ["*.toml"]
+#energy_modulator = ["*.toml"]
+
+[tool.setuptools-git-versioning]
+enabled = true
+
+[tool.ruff]
+# Set line length
+line-length = 120
+# Exclude specific directories
+exclude = [
+    "include",
+    "venv",
+    ".eggs",
+    ".git",
+    ".venv",
+    "__pycache__",
+    "node_modules",
+]
 
 [tool.ruff.lint]
 select = ["ALL"]
+ignore = [
+    #"E501",  # line too long
+    "N813",
+    "D401",
+]
+fixable = ["ALL"]
+#unfixable = []
 
-[tool.ruff]
-line-length = 120
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"

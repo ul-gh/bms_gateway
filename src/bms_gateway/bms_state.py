@@ -63,7 +63,7 @@ class Errors:
         self.oc_charge = bool(flags_high & 1 << 0)
         return self
 
-    def to_flags(self) -> tuple[int]:
+    def to_flags(self) -> tuple[int, int]:
         """Return HW register flag bytes representation of own state."""
         flags_low = int(self.oc_discharge) * 1 << 7
         flags_low |= int(self.temp_low) * 1 << 4
@@ -102,7 +102,7 @@ class Warnings:
         self.oc_charge = bool(flags_high & 1 << 0)
         return self
 
-    def to_flags(self) -> tuple[int]:
+    def to_flags(self) -> tuple[int, int]:
         """Return HW register flag bytes representation of own state."""
         flags_low = int(self.oc_discharge) * 1 << 7
         flags_low |= int(self.temp_low) * 1 << 4

@@ -3,12 +3,13 @@
 import asyncio
 import logging
 import time
-from typing import Self
+from types import TracebackType
+from typing import Self, final
 
 import can
 
-from .app_config import BMSInConfig, BMSOutConfig
-from .bms_state import BMSState
+from bms_gateway.app_config import BMSInConfig, BMSOutConfig
+from bms_gateway.bms_state import BMSState
 
 logger = logging.getLogger(__name__)
 
@@ -22,21 +23,22 @@ ID_BMS_TELEGRAM_START: int = 0x359
 ID_INVERTER_REQUEST: int = 0x305
 
 
+@final
 class BMSIn:
     """Representation of input-side battery BMS state."""
 
     def __init__(self, config: BMSInConfig) -> None:
         """Initialize an input (battery-side) BMS representation object."""
-        self.config = config
-        self.bus: can.Bus = None
-        self._reader: can.AsyncBufferedReader = None
+        self.config: BMSInConfig = config
+        self.bus: can.BusABC | None = None
+        self._reader: can.AsyncBufferedReader | None = None
         self._state = BMSState(capacity_ah=config.CAPACITY_AH)
-        self._raw_frames: dict = {}
+        self._raw_frames: dict[int, bytes] = {}
         self._framecounter: int = 0
         self._data_ready = asyncio.Condition()
-        self._can_notifier: can.Notifier = None
-        self._poll_task: can.CyclicSendTaskABC = None
-        self._task_main: asyncio.Task = None
+        self._can_notifier: can.Notifier | None = None
+        self._poll_task: can.CyclicSendTaskABC | None = None
+        self._task_main: asyncio.Task[None] | None = None
 
     async def __aenter__(self) -> Self:
         """Async context manager entry method."""
@@ -48,17 +50,25 @@ class BMSIn:
         if conf.POLL_INTERVAL is not None:
             sync_msg = can.Message(arbitration_id=ID_INVERTER_REQUEST, data=[0] * 8)
             self._poll_task = self.bus.send_periodic(sync_msg, conf.POLL_INTERVAL)
-        self._task_main = loop.create_task(self._fn_task_main())
+        self._task_main = loop.create_task(self._run_bms_receiver_task())
         return self
 
-    async def __aexit__(self, *_: object) -> None:
+    async def __aexit__(
+        self,
+        _exc_type: type[BaseException] | None,
+        _exc_val: BaseException | None,
+        _exc_tb: TracebackType | None,
+    ) -> None:
         """Async context manager exit method."""
         logger.debug("__aexit__ called")
         if self._poll_task is not None:
             self._poll_task.stop()
-        self._task_main.cancel()
-        self._can_notifier.stop()
-        self.bus.shutdown()
+        if self._task_main is not None:
+            _ = self._task_main.cancel()
+        if self._can_notifier is not None:
+            self._can_notifier.stop()
+        if self.bus is not None:
+            self.bus.shutdown()
 
     async def get_state(self) -> BMSState:
         """Return internal state representation."""
@@ -67,7 +77,7 @@ class BMSIn:
             await self._data_ready.wait()
             return self._state
 
-    async def _fn_task_main(self) -> None:
+    async def _run_bms_receiver_task(self) -> None:
         while True:
             msg = await self._reader.get_message()
             # Fill in BMS reply frames into dictionary
@@ -136,13 +146,14 @@ class BMSIn:
         state.timestamp_last_bms_update = time.time()
 
 
+@final
 class BMSOut:
     """Emulation of one output-side (connected to iverter) BMS."""
 
     def __init__(self, config: BMSOutConfig) -> None:
         """Initialize an output-side (emulated battery) BMS object."""
         self.config = config
-        self.bus: can.Bus = None
+        self.bus: can.BusABC | None = None
         self._reader: can.AsyncBufferedReader = None
         self._output_msgs: list[can.Message] = self._bms_encode(BMSState())
         # Option A: Send BMS state data cyclically when sync_interval is given
@@ -178,12 +189,23 @@ class BMSOut:
         # This will also enable a periodic task sending an outgoing sync
         # telegram periodically to initially and repeatedly trigger the cycle.
         if conf.SEND_SYNC_ACTIVATED:
-            self._task_transmit_state = loop.create_task(self._fn_task_reply())
+            self._task_transmit_state = loop.create_task(
+                self._run_bms_send_state_after_sync_task(),
+                name="send_state_after_sync_task",
+            )
         else:
-            self._task_transmit_state = loop.create_task(self._fn_task_push())
+            self._task_transmit_state = loop.create_task(
+                self._run_bms_send_state_task(),
+                name="send_state_task"
+                )
         return self
 
-    async def __aexit__(self, *_: object) -> None:
+    async def __aexit__(
+        self,
+        _exc_type: type[BaseException] | None,
+        _exc_val: BaseException | None,
+        _exc_tb: TracebackType | None,
+    ) -> None:
         """Async context manager exit method."""
         if self._task_transmit_sync is not None:
             self._task_transmit_sync.stop()
@@ -201,7 +223,7 @@ class BMSOut:
             self._data_valid.notify_all()
 
     # Normal mode: Push state updates to the connected inverter as soon as available
-    async def _fn_task_push(self) -> None:
+    async def _run_bms_send_state_task(self) -> None:
         while True:
             # Limit push data rate if this is > 0.0 seconds
             await asyncio.sleep(self.config.PUSH_MIN_DELAY)
@@ -214,7 +236,7 @@ class BMSOut:
     # If config.SEND_SYNC_ACTIVATED is set, instead of push mode, we wait for
     # an inverter sync/acqknowledge-telegram (CAN-ID 0x305, data 8x 0x00)
     # before sending the state update.
-    async def _fn_task_reply(self) -> None:
+    async def _run_bms_send_state_after_sync_task(self) -> None:
         while True:
             # Read incoming CAN msgs until a SYNC message is received
             while True:
