@@ -98,7 +98,7 @@ class BMSIn:
             else:
                 self._framecounter += 1
 
-    def _decode_frames_update_state(self, frames: dict[int, can.Message]) -> None:
+    def _decode_frames_update_state(self, frames: dict[int, bytearray]) -> None:
         state = self._state
         try:
             # CAN ID 0x351
@@ -108,8 +108,8 @@ class BMSIn:
             state.i_lim_discharge = 0.1 * int.from_bytes(msg[4:6], "little", signed=True)
             # CAN ID 0x355
             msg = frames[0x355]
-            state.soc = int.from_bytes(msg[0:2], "little")
-            state.soh = int.from_bytes(msg[2:4], "little")
+            state.soc = float(int.from_bytes(msg[0:2], "little"))
+            state.soh = float(int.from_bytes(msg[2:4], "little"))
             # CAN ID 0x356
             msg = frames[0x356]
             state.v_avg = 0.01 * int.from_bytes(msg[0:2], "little", signed=True)
@@ -157,11 +157,11 @@ class BMSOut:
         self._reader: can.AsyncBufferedReader = None
         self._output_msgs: list[can.Message] = self._bms_encode(BMSState())
         # Option A: Send BMS state data cyclically when sync_interval is given
-        self._task_transmit_sync: can.CyclicSendTaskABC = None
+        self._task_transmit_sync: can.CyclicSendTaskABC | None = None
         # Option B: Send BMS state data when a SYNC message is received
-        self._task_transmit_state: asyncio.Task = None
+        self._task_transmit_state: asyncio.Task[None]
         self._data_valid = asyncio.Condition()
-        self._can_notifier: can.Notifier = None
+        self._can_notifier: can.Notifier
 
     async def __aenter__(self) -> Self:
         """Async context manager entry method."""

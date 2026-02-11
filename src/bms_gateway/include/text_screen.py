@@ -12,7 +12,7 @@ class TextScreen():
         self._lines_printed = 0
         self._text_buffer = ""
 
-    def put(self, text):
+    def put(self, text: str):
         """Put lines of text in buffer, but do not output anything.
 
         Write output all at once, clearing the previous screen contents,

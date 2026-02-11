@@ -12,8 +12,8 @@ class BMSState:
     """BMS state as received on the CAN bus."""
 
     manufacturer: str = ""
-    soc: int = 0
-    soh: int = 0
+    soc: float = 0.0
+    soh: float = 0.0
     v_charge_cmd: float = 0.0
     i_lim_charge: float = 0.0
     i_lim_discharge: float = 0.0

@@ -79,6 +79,7 @@ combiner = BMSStateCombiner(conf.battery)
 
 async def main_task() -> None:
     """Receives BMS input data, combines and broadcasts to all inverters."""
+    mqtt_out: MQTTBroadcaster | None = None
     async with AsyncExitStack() as stack:
         bmses_in: list[BMSIn] = [BMSIn(conf) for conf in conf.bmses_in]
         bmses_out: list[BMSOut] = [BMSOut(conf) for conf in conf.bmses_out]
