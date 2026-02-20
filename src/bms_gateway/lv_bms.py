@@ -74,7 +74,7 @@ class BMSIn:
         """Return internal state representation."""
         logger.debug("BMS_In:get_state() called")
         async with self._data_ready:
-            await self._data_ready.wait()
+            _ = await self._data_ready.wait()
             return self._state
 
     async def _run_bms_receiver_task(self) -> None:
@@ -93,7 +93,7 @@ class BMSIn:
                         async with self._data_ready:
                             self._data_ready.notify_all()
                     except ValueError as e:
-                        logger.warning(e.args[0])
+                        logger.warning(e.args[0])  # pyright: ignore[reportAny]
                 self._framecounter = 1
             else:
                 self._framecounter += 1
@@ -154,7 +154,7 @@ class BMSOut:
         """Initialize an output-side (emulated battery) BMS object."""
         self.config = config
         self.bus: can.BusABC | None = None
-        self._reader: can.AsyncBufferedReader = None
+        self._reader: can.AsyncBufferedReader | None = None
         self._output_msgs: list[can.Message] = self._bms_encode(BMSState())
         # Option A: Send BMS state data cyclically when sync_interval is given
         self._task_transmit_sync: can.CyclicSendTaskABC | None = None
@@ -210,7 +210,7 @@ class BMSOut:
         if self._task_transmit_sync is not None:
             self._task_transmit_sync.stop()
         else:
-            self._task_transmit_state.cancel()
+            _ = self._task_transmit_state.cancel()
         self._can_notifier.stop()
         self.bus.shutdown()
 
@@ -246,7 +246,7 @@ class BMSOut:
             # SYNC message was received, reply by sending state to inverter
             # once _data_valid is notified by set_state()
             async with self._data_valid:
-                await self._data_valid.wait()
+                _ = await self._data_valid.wait()
                 for msg in self._output_msgs:
                     self.bus.send(msg)
 

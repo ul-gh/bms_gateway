@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Subscribe to MQTT state broadcasting topic and dump on screen"""
 import asyncio
-from typing import cast
 import aiomqtt
 import json
 from pprint import pformat
@@ -18,7 +17,7 @@ conf = app_config.init_or_read_from_config_file()
 screen = TextScreen()
 
 async def print_msg(msg: aiomqtt.Message) -> None:
-    msg_dict = json.loads(cast(bytes, msg.payload))
+    msg_dict = json.loads(msg.payload, cls=dict[int, bytes])
     state = BMSState(**msg_dict)
     errors = Errors().from_flags(state.error_flags_1, state.error_flags_2)
     warnings = Warnings().from_flags(state.warning_flags_1, state.warning_flags_2)
@@ -35,8 +34,9 @@ async def print_msg(msg: aiomqtt.Message) -> None:
 async def main_task() -> None:
     async with aiomqtt.Client(conf.mqtt.BROKER, conf.mqtt.PORT) as client:
         await client.subscribe(conf.mqtt.TOPIC)
-        print(f"\nSubscribed to {conf.mqtt.TOPIC} on {conf.mqtt.BROKER}..\n"
-              "Press CTRL-C to exit!\n")
+        msg = f"\nSubscribed to {conf.mqtt.TOPIC} on {conf.mqtt.BROKER}..\n"
+        "Press CTRL-C to exit!\n"
+        print(msg)
         async for msg in client.messages:
             await print_msg(msg)
 
