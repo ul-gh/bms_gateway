@@ -19,7 +19,7 @@ BMS_IN_BITRATE: int = 500000
 # Number of CAN frames belonging to one reply data telegram from the BMS
 N_BMS_REPLY_FRAMES: int = 6
 # CAN ID which marks the end of the data telegram sent from the BMS
-ID_BMS_LAST_FRAME: int = 0x35E
+ID_LAST_FRAME: int = 0x35E
 # CAN ID which is sent by the inverter to poll the BMS (using 8x 0x00 data)
 ID_INVERTER_REQUEST: int = 0x305
 
@@ -40,6 +40,7 @@ class BMSIn:
         self._raw_frames = dict[int, bytearray]()
         self._framecounter: int = 0
         self._timestamp_last_inverter_request: float = float("NaN")
+        self._n_invalid_data_telegrams: int = 0
         self._can_notifier: can.Notifier | None = None
         self._poll_task: can.CyclicSendTaskABC | None = None
         self._task_main: asyncio.Task[None] | None = None
@@ -83,7 +84,7 @@ class BMSIn:
             # The inverter frame contains no data and only timestamp is logged
             if msg.arbitration_id == ID_INVERTER_REQUEST:
                 self._timestamp_last_inverter_request = time.time()
-            elif msg.arbitration_id == ID_BMS_LAST_FRAME:
+            elif msg.arbitration_id == ID_LAST_FRAME:
                 if self._framecounter >= N_BMS_REPLY_FRAMES:
                     try:
                         new_state = self._decode_frames()
@@ -96,52 +97,56 @@ class BMSIn:
                 self._framecounter += 1
 
     def _decode_frames(self) -> BMSState:
-        state = BMSState()
-        state.timestamp_last_inverter_request = self._timestamp_last_inverter_request
         try:
-            # CAN ID 0x351
-            msg = self._raw_frames[0x351]
-            state.v_charge_cmd = 0.1 * int.from_bytes(msg[0:2], "little")
-            state.i_lim_charge = 0.1 * int.from_bytes(msg[2:4], "little", signed=True)
-            state.i_lim_discharge = 0.1 * int.from_bytes(msg[4:6], "little", signed=True)
-            # CAN ID 0x355
-            msg = self._raw_frames[0x355]
-            state.soc = float(int.from_bytes(msg[0:2], "little"))
-            state.soh = float(int.from_bytes(msg[2:4], "little"))
-            # CAN ID 0x356
-            msg = self._raw_frames[0x356]
-            state.v_total = 0.01 * int.from_bytes(msg[0:2], "little", signed=True)
-            state.i_total = 0.1 * int.from_bytes(msg[2:4], "little", signed=True)
-            state.t_avg = 0.1 * int.from_bytes(msg[4:6], "little", signed=True)
-            # CAN ID 0x359
-            msg = self._raw_frames[0x359]
-            state.error_flags_1 = msg[0]
-            state.error_flags_2 = msg[1]
-            state.warning_flags_1 = msg[2]
-            state.warning_flags_2 = msg[3]
-            state.n_modules = msg[4]
-            # CAN ID 0x35C
-            msg = self._raw_frames[0x35C]
-            # The status flags are individually treated
-            state.charge_enable = bool(msg[0] & 1 << 7)
-            state.discharge_enable = bool(msg[0] & 1 << 6)
-            state.force_charge_request = bool(msg[0] & 1 << 5)
-            state.force_charge_request_2 = bool(msg[0] & 1 << 4)
-            state.balancing_charge_request = bool(msg[0] & 1 << 3)
-            # CAN ID 0x35E
-            msg = self._raw_frames[ID_BMS_LAST_FRAME]
-            state.manufacturer = msg.decode().rstrip("\x00")
-        # Operator "<=" tests if left set is a subset of the set on the right side
-        # if not {0x351, 0x355, 0x356, 0x359, 0x35C, 0x35E} <= frames.keys():
+            # Assign each frame to a variable for easier access
+            f351 = self._raw_frames[0x351]
+            f355 = self._raw_frames[0x355]
+            f356 = self._raw_frames[0x356]
+            f359 = self._raw_frames[0x359]
+            f35c = self._raw_frames[0x35C]
+            f35e = self._raw_frames[0x35E]
+            # Construct a BMSState object from the received CAN frames
+            state = BMSState(
+                # CAN ID 0x351
+                v_charge_cmd=0.1 * int.from_bytes(f351[0:2], "little"),
+                i_lim_charge=0.1 * int.from_bytes(f351[2:4], "little", signed=True),
+                i_lim_discharge=0.1 * int.from_bytes(f351[4:6], "little", signed=True),
+                # CAN ID 0x355
+                soc=float(int.from_bytes(f355[0:2], "little")),
+                soh=float(int.from_bytes(f355[2:4], "little")),
+                # CAN ID 0x356
+                v_total=0.01 * int.from_bytes(f356[0:2], "little", signed=True),
+                i_total=0.1 * int.from_bytes(f356[2:4], "little", signed=True),
+                t_avg=0.1 * int.from_bytes(f356[4:6], "little", signed=True),
+                # CAN ID 0x359
+                error_flags_1=f359[0],
+                error_flags_2=f359[1],
+                warning_flags_1=f359[2],
+                warning_flags_2=f359[3],
+                n_modules=f359[4],
+                # CAN ID 0x35C
+                charge_enable=bool(f35c[0] & 1 << 7),
+                discharge_enable=bool(f35c[0] & 1 << 6),
+                force_charge_request=bool(f35c[0] & 1 << 5),
+                force_charge_request_2=bool(f35c[0] & 1 << 4),
+                balancing_charge_request=bool(f35c[0] & 1 << 3),
+                # CAN ID 0x35E
+                manufacturer=f35e.decode().rstrip("\x00"),
+                # Timestamp in seconds since epoch when the last BMS update was received
+                timestamp_last_bms_update=time.time(),
+                # Timestamp in seconds since epoch when the last inverter request was received
+                timestamp_last_inverter_request=self._timestamp_last_inverter_request,
+                # Number of invalid data telegrams received from or by the BMS
+                n_invalid_data_telegrams=self._n_invalid_data_telegrams,
+            )
         except KeyError as e:
             txt = f"Incomplete set of data frames received. ID: {hex(e.args[0])}"
-            state.n_invalid_data_telegrams += 1
+            self._n_invalid_data_telegrams += 1
             raise ValueError(txt) from e
         except (IndexError, ValueError, UnicodeDecodeError) as e:
             txt = f"Invalid data received. Details: {e.args[0]}"
-            state.n_invalid_data_telegrams += 1
+            self._n_invalid_data_telegrams += 1
             raise ValueError(txt) from e
-        state.timestamp_last_bms_update = time.time()
         return state
 
 
@@ -288,5 +293,5 @@ class BMSOut:
             can.Message(arbitration_id=0x356, is_extended_id=False, data=msg_356),
             can.Message(arbitration_id=0x359, is_extended_id=False, data=msg_359),
             can.Message(arbitration_id=0x35C, is_extended_id=False, data=msg_35c),
-            can.Message(arbitration_id=ID_BMS_LAST_FRAME, is_extended_id=False, data=msg_35e),
+            can.Message(arbitration_id=ID_LAST_FRAME, is_extended_id=False, data=msg_35e),
         ]

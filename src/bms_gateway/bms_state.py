@@ -25,8 +25,8 @@ class BMSState:
     # This is a positive value.
     i_lim_discharge: float = 0.0
     # Total stack voltage measurement in Volts.
-    v_total: float = 0.00
-    # Total stack current measurementin Amperes.
+    v_total: float = 0.0
+    # Total stack current measurement in Amperes.
     # Positive for charging, negative for discharging.
     i_total: float = 0.0
     # Average battery temperature in degrees Celsius.
@@ -82,13 +82,17 @@ class Errors:
 
     def to_flags(self) -> tuple[int, int]:
         """Return HW register flag bytes representation of own state."""
-        flags_low = int(self.oc_discharge) * 1 << 7
-        flags_low |= int(self.temp_low) * 1 << 4
-        flags_low |= int(self.temp_high) * 1 << 3
-        flags_low |= int(self.undervoltage) * 1 << 2
-        flags_low |= int(self.overvoltage) * 1 << 1
-        flags_high = int(self.system_error) * 1 << 3
-        flags_high |= int(self.oc_charge) * 1 << 0
+        flags_low = (
+            int(self.oc_discharge) << 7
+            | int(self.temp_low) << 4
+            | int(self.temp_high) << 3
+            | int(self.undervoltage) << 2
+            | int(self.overvoltage) << 1
+        )
+        flags_high = (
+            int(self.system_error) << 3
+            | int(self.oc_charge) << 0
+        )
         return flags_low, flags_high
 
     def copy(self) -> Self:
@@ -121,13 +125,17 @@ class Warnings:
 
     def to_flags(self) -> tuple[int, int]:
         """Return HW register flag bytes representation of own state."""
-        flags_low = int(self.oc_discharge) * 1 << 7
-        flags_low |= int(self.temp_low) * 1 << 4
-        flags_low |= int(self.temp_high) * 1 << 3
-        flags_low |= int(self.undervoltage) * 1 << 2
-        flags_low |= int(self.overvoltage) * 1 << 1
-        flags_high = int(self.comm_fail) * 1 << 3
-        flags_high |= int(self.oc_charge) * 1 << 0
+        flags_low = (
+            int(self.oc_discharge) << 7
+            | int(self.temp_low) << 4
+            | int(self.temp_high) << 3
+            | int(self.undervoltage) << 2
+            | int(self.overvoltage) << 1
+        )
+        flags_high = (
+            int(self.comm_fail) << 3
+            | int(self.oc_charge) << 0
+        )
         return flags_low, flags_high
 
     def copy(self) -> Self:
