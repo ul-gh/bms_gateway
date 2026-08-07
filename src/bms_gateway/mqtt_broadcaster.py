@@ -11,6 +11,7 @@ import aiomqtt
 
 from .app_config import MQTTConfig
 from .bms_state import BMSState
+from .utils import async_fixed_time_intervals
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,7 @@ class MQTTBroadcaster:
         self.config = config
         self._state = BMSState()
         self._task_publish_mqtt: asyncio.Task[None] | None = None
-        self._data_valid = asyncio.Condition()
+        self._data_lock = asyncio.Lock()
         self._client = aiomqtt.Client(
             config.BROKER,
             config.PORT,
@@ -53,20 +54,12 @@ class MQTTBroadcaster:
 
     async def set_state(self, state: BMSState) -> None:
         """Set state to be broadcasted over MQTT."""
-        async with self._data_valid:
+        async with self._data_lock:
             self._state = state
-            self._data_valid.notify_all()
 
     # Periodically sends BMS data broadcast on the specified bus
     async def _fn_task_publish_mqtt(self) -> None:
-        conf = self.config
-        loop = asyncio.get_event_loop()
         async with self._client as client:
-            next_call = loop.time()
-            while True:
-                async with self._data_valid:
-                    _ = await self._data_valid.wait()
-                    msg_json = json.dumps(dataclasses.asdict(self._state))
-                await client.publish(conf.TOPIC, msg_json)
-                next_call += conf.INTERVAL
-                await asyncio.sleep(next_call - loop.time())
+            async for _ in async_fixed_time_intervals(self.config.INTERVAL):
+                msg_json = json.dumps(dataclasses.asdict(self._state))
+                await client.publish(self.config.TOPIC, msg_json)

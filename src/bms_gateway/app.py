@@ -42,12 +42,15 @@ import logging
 import sys
 import threading
 from contextlib import AsyncExitStack
+from typing import TYPE_CHECKING
 
 from bms_gateway import app_config
-from bms_gateway.bms_state import BMSState
 from bms_gateway.bms_state_combiner import BMSStateCombiner
 from bms_gateway.lv_bms import BMSIn, BMSOut
 from bms_gateway.mqtt_broadcaster import MQTTBroadcaster
+
+if TYPE_CHECKING:
+    from bms_gateway.bms_state import BMSState
 
 parser = argparse.ArgumentParser(prog=__package__, description=__doc__)
 _ = parser.add_argument("-v", "--verbose", action="store_true", help="Set loglevel to DEBUG")

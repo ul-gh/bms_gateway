@@ -1,7 +1,6 @@
 """Combine n x BMS states into one (virtual BMS) output state object."""
 
 import threading
-
 from typing import final
 
 from bms_gateway.app_config import BatteryConfig
@@ -92,7 +91,7 @@ class BMSStateCombiner:
         state.soc = int(state.capacity_ah * state.soc)
         state.soh = int(state.capacity_ah * state.soh)
         state.t_avg *= state.capacity_ah
-        state.v_avg *= state.capacity_ah
+        state.v_total *= state.capacity_ah
         for additional in states_in[1:]:
             # For end-of-charge maximum voltage setpoint, the minimum of all
             # voltages requested by the input BMSes is calculated
@@ -102,7 +101,7 @@ class BMSStateCombiner:
             state.soc += int(additional.soc * additional.capacity_ah)
             state.soh += int(additional.soh * additional.capacity_ah)
             state.t_avg += additional.t_avg * additional.capacity_ah
-            state.v_avg += additional.v_avg * additional.capacity_ah
+            state.v_total += additional.v_total * additional.capacity_ah
             # Total capacity, total current and total current limis are the
             # sum of all limit values reported by the BMSes
             state.capacity_ah += additional.capacity_ah
@@ -131,7 +130,7 @@ class BMSStateCombiner:
         avg_factor_ah = 1.0 / state.capacity_ah
         state.soc = int(avg_factor_ah * state.soc)
         state.soh = int(avg_factor_ah * state.soh)
-        state.v_avg *= avg_factor_ah
+        state.v_total *= avg_factor_ah
         state.t_avg *= avg_factor_ah
         # Apply scaling factor and offset to result current
         state.i_total *= self._i_tot_scaling

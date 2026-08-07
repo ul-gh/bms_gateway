@@ -24,7 +24,6 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["include"]
 namespaces = false
 
 [tool.setuptools.package-data]
@@ -53,6 +52,7 @@ ignore = [
     #"E501",  # line too long
     "N813",
     "D401",
+    "D103",
 ]
 fixable = ["ALL"]
 #unfixable = []

@@ -10,6 +10,7 @@ import can
 
 from bms_gateway.app_config import BMSInConfig, BMSOutConfig
 from bms_gateway.bms_state import BMSState
+from bms_gateway.utils import SingleItemQueue
 
 logger = logging.getLogger(__name__)
 
@@ -17,8 +18,8 @@ logger = logging.getLogger(__name__)
 BMS_IN_BITRATE: int = 500000
 # Number of CAN frames belonging to one reply data telegram from the BMS
 N_BMS_REPLY_FRAMES: int = 6
-# CAN ID which marks the start of the data telegram sent from the BMS
-ID_BMS_TELEGRAM_START: int = 0x359
+# CAN ID which marks the end of the data telegram sent from the BMS
+ID_BMS_LAST_FRAME: int = 0x35E
 # CAN ID which is sent by the inverter to poll the BMS (using 8x 0x00 data)
 ID_INVERTER_REQUEST: int = 0x305
 
@@ -31,11 +32,14 @@ class BMSIn:
         """Initialize an input (battery-side) BMS representation object."""
         self.config: BMSInConfig = config
         self.bus: can.BusABC | None = None
+        # Result of the BMS state is stored in this object.
+        # It can be retrieved by calling state.get() or state.get_nopop() methods.
+        # The BMS state is updated by the _run_bms_receiver_task() method
+        self.state = SingleItemQueue[BMSState]()
         self._reader: can.AsyncBufferedReader | None = None
-        self._state = BMSState(capacity_ah=config.CAPACITY_AH)
-        self._raw_frames: dict[int, bytes] = {}
+        self._raw_frames = dict[int, bytearray]()
         self._framecounter: int = 0
-        self._data_ready = asyncio.Condition()
+        self._timestamp_last_inverter_request: float = float("NaN")
         self._can_notifier: can.Notifier | None = None
         self._poll_task: can.CyclicSendTaskABC | None = None
         self._task_main: asyncio.Task[None] | None = None
@@ -70,60 +74,54 @@ class BMSIn:
         if self.bus is not None:
             self.bus.shutdown()
 
-    async def get_state(self) -> BMSState:
-        """Return internal state representation."""
-        logger.debug("BMS_In:get_state() called")
-        async with self._data_ready:
-            _ = await self._data_ready.wait()
-            return self._state
-
     async def _run_bms_receiver_task(self) -> None:
         while True:
-            msg = await self._reader.get_message()
+            msg = await self._reader.get_message()  # pyright: ignore[reportOptionalMemberAccess]
             # Fill in BMS reply frames into dictionary
             self._raw_frames[msg.arbitration_id] = msg.data
             # Inverter request or acknowledge is inverleaved with BMS reply.
             # The inverter frame contains no data and only timestamp is logged
             if msg.arbitration_id == ID_INVERTER_REQUEST:
-                self._state.timestamp_last_inverter_request = time.time()
-            elif msg.arbitration_id == ID_BMS_TELEGRAM_START:
+                self._timestamp_last_inverter_request = time.time()
+            elif msg.arbitration_id == ID_BMS_LAST_FRAME:
                 if self._framecounter >= N_BMS_REPLY_FRAMES:
                     try:
-                        self._decode_frames_update_state(self._raw_frames)
-                        async with self._data_ready:
-                            self._data_ready.notify_all()
+                        new_state = self._decode_frames()
+                        self.state.put_nowait(new_state)
+                        self._raw_frames.clear()
                     except ValueError as e:
                         logger.warning(e.args[0])  # pyright: ignore[reportAny]
                 self._framecounter = 1
             else:
                 self._framecounter += 1
 
-    def _decode_frames_update_state(self, frames: dict[int, bytearray]) -> None:
-        state = self._state
+    def _decode_frames(self) -> BMSState:
+        state = BMSState()
+        state.timestamp_last_inverter_request = self._timestamp_last_inverter_request
         try:
             # CAN ID 0x351
-            msg = frames[0x351]
+            msg = self._raw_frames[0x351]
             state.v_charge_cmd = 0.1 * int.from_bytes(msg[0:2], "little")
             state.i_lim_charge = 0.1 * int.from_bytes(msg[2:4], "little", signed=True)
             state.i_lim_discharge = 0.1 * int.from_bytes(msg[4:6], "little", signed=True)
             # CAN ID 0x355
-            msg = frames[0x355]
+            msg = self._raw_frames[0x355]
             state.soc = float(int.from_bytes(msg[0:2], "little"))
             state.soh = float(int.from_bytes(msg[2:4], "little"))
             # CAN ID 0x356
-            msg = frames[0x356]
-            state.v_avg = 0.01 * int.from_bytes(msg[0:2], "little", signed=True)
+            msg = self._raw_frames[0x356]
+            state.v_total = 0.01 * int.from_bytes(msg[0:2], "little", signed=True)
             state.i_total = 0.1 * int.from_bytes(msg[2:4], "little", signed=True)
             state.t_avg = 0.1 * int.from_bytes(msg[4:6], "little", signed=True)
             # CAN ID 0x359
-            msg = frames[0x359]
+            msg = self._raw_frames[0x359]
             state.error_flags_1 = msg[0]
             state.error_flags_2 = msg[1]
             state.warning_flags_1 = msg[2]
             state.warning_flags_2 = msg[3]
             state.n_modules = msg[4]
             # CAN ID 0x35C
-            msg = frames[0x35C]
+            msg = self._raw_frames[0x35C]
             # The status flags are individually treated
             state.charge_enable = bool(msg[0] & 1 << 7)
             state.discharge_enable = bool(msg[0] & 1 << 6)
@@ -131,7 +129,7 @@ class BMSIn:
             state.force_charge_request_2 = bool(msg[0] & 1 << 4)
             state.balancing_charge_request = bool(msg[0] & 1 << 3)
             # CAN ID 0x35E
-            msg = frames[0x35E]
+            msg = self._raw_frames[ID_BMS_LAST_FRAME]
             state.manufacturer = msg.decode().rstrip("\x00")
         # Operator "<=" tests if left set is a subset of the set on the right side
         # if not {0x351, 0x355, 0x356, 0x359, 0x35C, 0x35E} <= frames.keys():
@@ -144,6 +142,7 @@ class BMSIn:
             state.n_invalid_data_telegrams += 1
             raise ValueError(txt) from e
         state.timestamp_last_bms_update = time.time()
+        return state
 
 
 @final
@@ -155,12 +154,11 @@ class BMSOut:
         self.config = config
         self.bus: can.BusABC | None = None
         self._reader: can.AsyncBufferedReader | None = None
-        self._output_msgs: list[can.Message] = self._bms_encode(BMSState())
+        self._output_msgs = SingleItemQueue[list[can.Message]]()
         # Option A: Send BMS state data cyclically when sync_interval is given
         self._task_transmit_sync: can.CyclicSendTaskABC | None = None
         # Option B: Send BMS state data when a SYNC message is received
         self._task_transmit_state: asyncio.Task[None]
-        self._data_valid = asyncio.Condition()
         self._can_notifier: can.Notifier
 
     async def __aenter__(self) -> Self:
@@ -212,15 +210,13 @@ class BMSOut:
         else:
             _ = self._task_transmit_state.cancel()
         self._can_notifier.stop()
-        self.bus.shutdown()
+        if self.bus is not None:
+            self.bus.shutdown()
 
     async def set_state(self, state: BMSState) -> None:
         """Set state of emulated output-side (connected to iverter) BMS."""
         logger.debug("BMS_Out:set_state() called")
-        async with self._data_valid:
-            self._output_msgs.clear()
-            self._output_msgs.extend(self._bms_encode(state))
-            self._data_valid.notify_all()
+        self._output_msgs.put_nowait(self._bms_encode(state))
 
     # Normal mode: Push state updates to the connected inverter as soon as available
     async def _run_bms_send_state_task(self) -> None:
@@ -228,10 +224,9 @@ class BMSOut:
             # Limit push data rate if this is > 0.0 seconds
             await asyncio.sleep(self.config.PUSH_MIN_DELAY)
             # Send state to inverter once _data_valid is notified by set_state()
-            async with self._data_valid:
-                await self._data_valid.wait()
-                for msg in self._output_msgs:
-                    self.bus.send(msg)
+            tx_msgs = await self._output_msgs.get()
+            for msg in tx_msgs:
+                self.bus.send(msg)  # pyright: ignore[reportOptionalMemberAccess]
 
     # If config.SEND_SYNC_ACTIVATED is set, instead of push mode, we wait for
     # an inverter sync/acqknowledge-telegram (CAN-ID 0x305, data 8x 0x00)
@@ -240,15 +235,13 @@ class BMSOut:
         while True:
             # Read incoming CAN msgs until a SYNC message is received
             while True:
-                msg = await self._reader.get_message()
+                msg = await self._reader.get_message()  # pyright: ignore[reportOptionalMemberAccess]
                 if msg.arbitration_id == ID_INVERTER_REQUEST:
                     break
             # SYNC message was received, reply by sending state to inverter
-            # once _data_valid is notified by set_state()
-            async with self._data_valid:
-                _ = await self._data_valid.wait()
-                for msg in self._output_msgs:
-                    self.bus.send(msg)
+            tx_msgs = await self._output_msgs.get()
+            for msg in tx_msgs:
+                self.bus.send(msg)  # pyright: ignore[reportOptionalMemberAccess]
 
     def _bms_encode(self, state: BMSState) -> list[can.Message]:
         conf = self.config
@@ -265,7 +258,7 @@ class BMSOut:
         )
         msg_355 = int(state.soc).to_bytes(2, "little") + int(state.soh).to_bytes(2, "little")
         msg_356 = (
-            int(100 * state.v_avg).to_bytes(2, "little", signed=True)
+            int(100 * state.v_total).to_bytes(2, "little", signed=True)
             + int(10 * i_total).to_bytes(2, "little", signed=True)
             + int(10 * state.t_avg).to_bytes(2, "little", signed=True)
         )
@@ -295,5 +288,5 @@ class BMSOut:
             can.Message(arbitration_id=0x356, is_extended_id=False, data=msg_356),
             can.Message(arbitration_id=0x359, is_extended_id=False, data=msg_359),
             can.Message(arbitration_id=0x35C, is_extended_id=False, data=msg_35c),
-            can.Message(arbitration_id=0x35E, is_extended_id=False, data=msg_35e),
+            can.Message(arbitration_id=ID_BMS_LAST_FRAME, is_extended_id=False, data=msg_35e),
         ]

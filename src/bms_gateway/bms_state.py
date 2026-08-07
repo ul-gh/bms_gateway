@@ -12,19 +12,33 @@ class BMSState:
     """BMS state as received on the CAN bus."""
 
     manufacturer: str = ""
+    # SOC in percent, 0.0 to 100.0.
     soc: float = 0.0
+    # SOH in percent, 0.0 to 100.0.
     soh: float = 0.0
+    # Maximum allowed charging voltage in Volts for total battery stack.
     v_charge_cmd: float = 0.0
+    # Maximum allowed charging current in Amperes for total battery stack.
+    # This is a positive value.
     i_lim_charge: float = 0.0
+    # Maximum allowed discharging current in Amperes for total battery stack.
+    # This is a positive value.
     i_lim_discharge: float = 0.0
-    v_avg: float = 0.00
+    # Total stack voltage measurement in Volts.
+    v_total: float = 0.00
+    # Total stack current measurementin Amperes.
+    # Positive for charging, negative for discharging.
     i_total: float = 0.0
+    # Average battery temperature in degrees Celsius.
     t_avg: float = 0.0
+    # 8-bit flags for errors and warnings.
     error_flags_1: int = 0xFF
     error_flags_2: int = 0xFF
     warning_flags_1: int = 0xFF
     warning_flags_2: int = 0xFF
+    # Total number of online battery modules connected to the system.
     n_modules: int = 0
+    # Charger activation request flags. Can be used to control the charger.
     charge_enable: bool = False
     discharge_enable: bool = False
     force_charge_request: bool = False
@@ -32,8 +46,11 @@ class BMSState:
     balancing_charge_request: bool = False
     timestamp_last_bms_update: float = 0.0
     timestamp_last_inverter_request: float = 0.0
+    # Number of invalid data telegrams received from or by the BMS.
+    # This can be used to detect communication issues.
     n_invalid_data_telegrams: int = 0
-    capacity_ah: float = 1.0
+    # Total battery capacity in Ah.
+    capacity_ah: float = 0.0
 
     def copy(self) -> Self:
         """Return deep copy of this config object."""

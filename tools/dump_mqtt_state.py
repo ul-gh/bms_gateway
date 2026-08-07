@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
-"""Subscribe to MQTT state broadcasting topic and dump on screen"""
+"""Subscribe to MQTT state broadcasting topic and dump on screen."""
 import asyncio
-import aiomqtt
 import json
 from pprint import pformat
 
+import aiomqtt
+
 from bms_gateway import app_config
 from bms_gateway.bms_state import BMSState, Errors, Warnings
-from bms_gateway.include.text_screen import TextScreen
+from bms_gateway.utils import TextScreen
 
 # App configuration read from file: "~/bms_gateway/bms_config.toml"
 # Default configuration: See source tree file "bms_config_default.toml"
@@ -17,8 +18,8 @@ conf = app_config.init_or_read_from_config_file()
 screen = TextScreen()
 
 async def print_msg(msg: aiomqtt.Message) -> None:
-    msg_dict = json.loads(msg.payload, cls=dict[int, bytes])
-    state = BMSState(**msg_dict)
+    msg_dict = json.loads(msg.payload)  # pyright: ignore[reportAny]
+    state = BMSState(**msg_dict)  # pyright: ignore[reportAny]
     errors = Errors().from_flags(state.error_flags_1, state.error_flags_2)
     warnings = Warnings().from_flags(state.warning_flags_1, state.warning_flags_2)
     state_str = (f"\x1b[34m{pformat(state)}\n"
@@ -33,7 +34,7 @@ async def print_msg(msg: aiomqtt.Message) -> None:
 
 async def main_task() -> None:
     async with aiomqtt.Client(conf.mqtt.BROKER, conf.mqtt.PORT) as client:
-        await client.subscribe(conf.mqtt.TOPIC)
+        _ = await client.subscribe(conf.mqtt.TOPIC)
         msg = f"\nSubscribed to {conf.mqtt.TOPIC} on {conf.mqtt.BROKER}..\n"
         "Press CTRL-C to exit!\n"
         print(msg)
