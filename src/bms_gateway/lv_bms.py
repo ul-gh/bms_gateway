@@ -99,39 +99,39 @@ class BMSIn:
     def _decode_frames(self) -> BMSState:
         try:
             # Assign each frame to a variable for easier access
-            f351 = self._raw_frames[0x351]
-            f355 = self._raw_frames[0x355]
-            f356 = self._raw_frames[0x356]
-            f359 = self._raw_frames[0x359]
-            f35c = self._raw_frames[0x35C]
-            f35e = self._raw_frames[0x35E]
+            msg_351 = self._raw_frames[0x351]
+            msg_355 = self._raw_frames[0x355]
+            msg_356 = self._raw_frames[0x356]
+            msg_359 = self._raw_frames[0x359]
+            msg_35c = self._raw_frames[0x35C]
+            msg_35e = self._raw_frames[0x35E]
             # Construct a BMSState object from the received CAN frames
             state = BMSState(
                 # CAN ID 0x351
-                v_charge_cmd=0.1 * int.from_bytes(f351[0:2], "little"),
-                i_lim_charge=0.1 * int.from_bytes(f351[2:4], "little", signed=True),
-                i_lim_discharge=0.1 * int.from_bytes(f351[4:6], "little", signed=True),
+                v_charge_cmd=0.1 * int.from_bytes(msg_351[0:2], "little"),
+                i_lim_charge=0.1 * int.from_bytes(msg_351[2:4], "little", signed=True),
+                i_lim_discharge=0.1 * int.from_bytes(msg_351[4:6], "little", signed=True),
                 # CAN ID 0x355
-                soc=float(int.from_bytes(f355[0:2], "little")),
-                soh=float(int.from_bytes(f355[2:4], "little")),
+                soc=float(int.from_bytes(msg_355[0:2], "little")),
+                soh=float(int.from_bytes(msg_355[2:4], "little")),
                 # CAN ID 0x356
-                v_total=0.01 * int.from_bytes(f356[0:2], "little", signed=True),
-                i_total=0.1 * int.from_bytes(f356[2:4], "little", signed=True),
-                t_avg=0.1 * int.from_bytes(f356[4:6], "little", signed=True),
+                v_total=0.01 * int.from_bytes(msg_356[0:2], "little", signed=True),
+                i_total=0.1 * int.from_bytes(msg_356[2:4], "little", signed=True),
+                t_avg=0.1 * int.from_bytes(msg_356[4:6], "little", signed=True),
                 # CAN ID 0x359
-                error_flags_1=f359[0],
-                error_flags_2=f359[1],
-                warning_flags_1=f359[2],
-                warning_flags_2=f359[3],
-                n_modules=f359[4],
+                error_flags_1=msg_359[0],
+                error_flags_2=msg_359[1],
+                warning_flags_1=msg_359[2],
+                warning_flags_2=msg_359[3],
+                n_modules=msg_359[4],
                 # CAN ID 0x35C
-                charge_enable=bool(f35c[0] & 1 << 7),
-                discharge_enable=bool(f35c[0] & 1 << 6),
-                force_charge_request=bool(f35c[0] & 1 << 5),
-                force_charge_request_2=bool(f35c[0] & 1 << 4),
-                balancing_charge_request=bool(f35c[0] & 1 << 3),
+                charge_enable=bool(msg_35c[0] & 1 << 7),
+                discharge_enable=bool(msg_35c[0] & 1 << 6),
+                force_charge_request=bool(msg_35c[0] & 1 << 5),
+                force_charge_request_2=bool(msg_35c[0] & 1 << 4),
+                balancing_charge_request=bool(msg_35c[0] & 1 << 3),
                 # CAN ID 0x35E
-                manufacturer=f35e.decode().rstrip("\x00"),
+                manufacturer=msg_35e.decode().rstrip("\x00"),
                 # Timestamp in seconds since epoch when the last BMS update was received
                 timestamp_last_bms_update=time.time(),
                 # Timestamp in seconds since epoch when the last inverter request was received
