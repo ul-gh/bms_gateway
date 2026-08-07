@@ -16,11 +16,11 @@ logger = logging.getLogger(__name__)
 
 # CAN bitrate for battery-side BMSs
 BMS_IN_BITRATE: int = 500000
-# Number of CAN frames belonging to one reply data telegram from the BMS
+# Number of CAN frames belonging to the periodic state updates from the BMS.
 N_BMS_REPLY_FRAMES: int = 6
-# CAN ID which marks the end of the data telegram sent from the BMS
+# CAN ID marking the last of the state reporting data frames sent from the BMS.
 ID_LAST_FRAME: int = 0x35E
-# CAN ID which is sent by the inverter to poll the BMS (using 8x 0x00 data)
+# CAN ID which is sent by the inverter to poll the BMS (using 8x 0x00 data).
 ID_INVERTER_REQUEST: int = 0x305
 
 
